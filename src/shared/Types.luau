@@ -58,4 +58,32 @@ export type ConfigType = {
 	Difficulty: { DifficultyRow },
 }
 
+-- Remote payloads, server to client. endsAt is a server timestamp from
+-- workspace:GetServerTimeNow(), so clients count down without deciding timing.
+
+export type StateChangedPayload = {
+	state: MatchState,
+	endsAt: number?,
+}
+
+export type RoundInfoPayload = {
+	round: number,
+	timerSeconds: number,
+	playersLeft: number,
+}
+
+export type TargetAnnouncedPayload = {
+	colorId: ColorId,
+	name: string,
+}
+
+export type PlayerEliminatedPayload = {
+	userId: number,
+	playersLeft: number,
+}
+
+export type MatchResultPayload = {
+	winnerUserIds: { number },
+}
+
 return {}
