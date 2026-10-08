@@ -1,0 +1,9 @@
+# Rojo build output
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+
+# Studio lock and backup files
+*.rbxl.lock
+*.rbxlx.lock
