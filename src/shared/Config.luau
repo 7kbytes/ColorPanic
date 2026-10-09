@@ -70,7 +70,7 @@ local Config: Types.ConfigType = {
 	-- Placeholder HUD (S1-09). Sizes are fractions of the screen so it scales to phones.
 	Hud = {
 		width = 0.4, -- fraction of screen width
-		height = 0.2, -- fraction of screen height
+		height = 0.25, -- fraction of screen height
 		topMargin = 0.01, -- fraction of screen height above the panel
 		minTextSize = 10,
 		maxTextSize = 28,
