@@ -4,6 +4,7 @@
 -- Spawn points come from workspace.Lobby.Spawns and workspace.SpectatorArea.Spawns (the
 -- builder's naming). If those areas are missing, simple placeholder platforms are created and
 -- tagged with a Placeholder attribute, so the builder's real areas take over with no code change.
+-- The lobby always gets a SpawnLocation, so a character that is never moved still spawns there.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -19,8 +20,7 @@ local LOBBY_NAME = "Lobby"
 local SPECTATOR_NAME = "SpectatorArea"
 local SPAWNS_NAME = "Spawns"
 local PLACEHOLDER_ATTRIBUTE = "Placeholder"
--- How long to wait for a new character's root part before giving up on placing it.
-local ROOT_PART_TIMEOUT = 5
+local LOBBY_SPAWN_NAME = "LobbySpawnLocation"
 -- Size of the invisible spawn markers in placeholder areas.
 local SPAWN_MARKER_SIZE = Vector3.new(2, 1, 2)
 
@@ -114,11 +114,16 @@ local function moveCharacter(player: Player, surface: Vector3)
 		return -- placed by CharacterAdded once it spawns
 	end
 	local root = character:FindFirstChild("HumanoidRootPart")
-		or character:WaitForChild("HumanoidRootPart", ROOT_PART_TIMEOUT)
+		or character:WaitForChild("HumanoidRootPart", Config.Placement.characterReadyTimeout)
 	if not root or character.Parent == nil then
 		return
 	end
 	character:PivotTo(CFrame.new(surface + Vector3.new(0, Config.Placement.spawnHeight, 0)))
+	-- A player eliminated mid-fall keeps their speed otherwise and drops through the platform.
+	if root:IsA("BasePart") then
+		root.AssemblyLinearVelocity = Vector3.zero
+		root.AssemblyAngularVelocity = Vector3.zero
+	end
 end
 
 -- Moves a player to the next spawn in the area, cycling through the spawns.
@@ -191,13 +196,72 @@ function PlacementService.placeByRole(player: Player)
 	end
 end
 
-local function onPlayerAdded(player: Player)
-	player.CharacterAdded:Connect(function()
-		PlacementService.placeByRole(player)
-	end)
-	if player.Character then
-		PlacementService.placeByRole(player)
+-- Waits until `character` is in the workspace and has its root part. CharacterAdded can fire
+-- before the character is parented, and a move made then is lost. Returns false on timeout.
+local function waitUntilReady(character: Model): boolean
+	local deadline = os.clock() + Config.Placement.characterReadyTimeout
+	while not character:IsDescendantOf(workspace) do
+		if os.clock() >= deadline then
+			return false
+		end
+		task.wait()
 	end
+	local remaining = math.max(0, deadline - os.clock())
+	return character:FindFirstChild("HumanoidRootPart") ~= nil
+		or character:WaitForChild("HumanoidRootPart", remaining) ~= nil
+end
+
+-- Places a newly spawned character once it is ready, using the player's role at that moment.
+local function onCharacterAdded(player: Player, character: Model)
+	if not waitUntilReady(character) then
+		warn(
+			string.format(
+				"[Placement] %s's character was not ready in time; left at the lobby spawn",
+				player.Name
+			)
+		)
+		return
+	end
+	-- A newer character may have replaced this one while we waited.
+	if player.Character ~= character then
+		return
+	end
+	PlacementService.placeByRole(player)
+end
+
+local function onPlayerAdded(player: Player)
+	player.CharacterAdded:Connect(function(character)
+		onCharacterAdded(player, character)
+	end)
+	local character = player.Character
+	if character then
+		task.spawn(onCharacterAdded, player, character)
+	end
+end
+
+-- Makes sure the lobby has a SpawnLocation, so any character that is not moved (a missed or
+-- timed-out placement) spawns in the lobby instead of Roblox's default spot over the arena.
+local function ensureLobbySpawn()
+	local lobby = workspace:FindFirstChild(LOBBY_NAME)
+	if not lobby or lobby:FindFirstChildWhichIsA("SpawnLocation", true) then
+		return
+	end
+	local origin = toVector3(Config.Placement.lobbyOrigin)
+	local size = toVector3(Config.Placement.lobbySpawnSize)
+	local spawnLocation = Instance.new("SpawnLocation")
+	spawnLocation.Name = LOBBY_SPAWN_NAME
+	spawnLocation.Anchored = true
+	spawnLocation.CanCollide = false
+	spawnLocation.CanQuery = false
+	spawnLocation.Transparency = 1
+	spawnLocation.Neutral = true -- any player may spawn here, no teams
+	spawnLocation.Duration = 0 -- no spawn force field
+	spawnLocation.Size = size
+	-- Sits on top of the lobby floor; characters spawn just above it.
+	spawnLocation.Position = origin + Vector3.new(0, size.Y / 2, 0)
+	spawnLocation:SetAttribute(PLACEHOLDER_ATTRIBUTE, true)
+	spawnLocation.Parent = lobby
+	print("[Placement] Added a lobby SpawnLocation fallback")
 end
 
 -- Creates any missing placeholder areas and places every character as it spawns.
@@ -209,6 +273,7 @@ function PlacementService.init(roleOf: (Player) -> PlayerRole)
 
 	ensureArea(LOBBY_NAME, Config.Placement.lobbyOrigin, Config.Placement.lobbyRgb)
 	ensureArea(SPECTATOR_NAME, Config.Placement.spectatorOrigin, Config.Placement.spectatorRgb)
+	ensureLobbySpawn()
 
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	for _, player in Players:GetPlayers() do

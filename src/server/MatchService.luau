@@ -40,6 +40,8 @@ local baselinePartCount = 0 -- workspace parts before the first match, for the r
 local rng = Random.new()
 -- How long to wait for a new character's Humanoid before giving up on tracking its death.
 local HUMANOID_TIMEOUT = 5
+-- Player attribute mirroring MatchService.getRole: "Lobby", "Survivor" or "Spectator".
+local MATCH_ROLE_ATTRIBUTE = "MatchRole"
 
 local function countPlayers(): number
 	return #Players:GetPlayers()
@@ -122,9 +124,36 @@ local function getSurvivorList(): { Player }
 	return list
 end
 
+-- Where a player belongs right now: on the arena, in the spectator area, or in the lobby.
+-- A survivor who died this round waits in the spectator area until the round is resolved.
+local function roleOf(player: Player): PlayerRole
+	if survivors[player] and not diedThisRound[player] then
+		return "Survivor"
+	elseif survivors[player] or spectators[player] then
+		return "Spectator"
+	end
+	return "Lobby"
+end
+
+-- Mirrors a player's role into a read-only attribute, so tools and later UI can read it.
+-- The server alone decides roles; nothing reads this attribute back into game logic.
+local function syncRole(player: Player)
+	local role = roleOf(player)
+	if player:GetAttribute(MATCH_ROLE_ATTRIBUTE) ~= role then
+		player:SetAttribute(MATCH_ROLE_ATTRIBUTE, role)
+	end
+end
+
+local function syncAllRoles()
+	for _, player in Players:GetPlayers() do
+		syncRole(player)
+	end
+end
+
 local function eliminate(player: Player)
 	survivors[player] = nil
 	spectators[player] = true
+	syncRole(player)
 	local playersLeft = countSurvivors()
 	print(string.format("[Elimination] %s is out, %d left", player.Name, playersLeft))
 	PlacementService.toSpectator(player)
@@ -337,6 +366,8 @@ end
 local function transition(nextState: MatchState)
 	local previous: MatchState = state
 	onEnter(previous, nextState)
+	-- Match start, a replay clearing deaths, and Reset all change roles in bulk.
+	syncAllRoles()
 
 	local duration = getDuration(nextState)
 	state = nextState
@@ -392,6 +423,7 @@ local function onCharacterAdded(player: Player, character: Model)
 		local inRound = state == "RoundIntro" or state == "Run" or state == "Elimination"
 		if inMatch and inRound and survivors[player] and not diedThisRound[player] then
 			diedThisRound[player] = true
+			syncRole(player)
 			print(string.format("[Elimination] %s died during round %d", player.Name, round))
 		end
 	end)
@@ -401,6 +433,7 @@ local function onPlayerAdded(player: Player)
 	if inMatch then
 		spectators[player] = true
 	end
+	syncRole(player)
 	player.CharacterAdded:Connect(function(character)
 		onCharacterAdded(player, character)
 	end)
@@ -430,15 +463,9 @@ function MatchService.getState(): MatchState
 	return state
 end
 
--- Where a player belongs right now: on the arena, in the spectator area, or in the lobby.
--- A survivor who died this round waits in the spectator area until the round is resolved.
+-- Where a player belongs right now (see roleOf). Also mirrored in the MatchRole attribute.
 function MatchService.getRole(player: Player): PlayerRole
-	if survivors[player] and not diedThisRound[player] then
-		return "Survivor"
-	elseif survivors[player] or spectators[player] then
-		return "Spectator"
-	end
-	return "Lobby"
+	return roleOf(player)
 end
 
 function MatchService.start()

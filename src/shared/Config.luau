@@ -60,6 +60,10 @@ local Config: Types.ConfigType = {
 		spectatorRgb = { 170, 200, 230 },
 		-- After a reset, a character further than this from every lobby spawn counts as stuck.
 		lobbyCheckRadius = 40, -- studs
+		-- How long to wait for a new character to enter the workspace with its root part
+		-- before giving up on moving it. A missed move leaves it at the lobby SpawnLocation.
+		characterReadyTimeout = 5, -- seconds
+		lobbySpawnSize = { 6, 1, 6 }, -- studs, the lobby SpawnLocation fallback
 	},
 
 	-- Who counts as eliminated at the end of the Elimination state (SPEC section 3).

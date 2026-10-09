@@ -75,6 +75,8 @@ export type ConfigType = {
 		lobbyRgb: { number },
 		spectatorRgb: { number },
 		lobbyCheckRadius: number,
+		characterReadyTimeout: number,
+		lobbySpawnSize: { number },
 	},
 	Elimination: {
 		fallMargin: number,
