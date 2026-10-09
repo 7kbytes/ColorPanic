@@ -73,3 +73,90 @@ describe("EliminationRules.resolveRound", function()
 		end)
 	end
 end)
+
+describe("EliminationRules.decide", function()
+	local NAMED =
+		{ x = 0, z = 0, halfX = 5, halfZ = 5, topY = 40.5, name = "Tile_3_3", colorId = 4 }
+
+	it("reports the tile it is safe on, with nothing past the edge or below the top", function()
+		local decision = EliminationRules.decide(1, 43.5, -2, { NAMED }, RULES)
+		expect(decision.safe).toBe(true)
+		expect(decision.reason).toBe("safe")
+		expect(decision.tile).toBe(NAMED)
+		expect(decision.outsideEdge).toBe(0)
+		expect(decision.belowTop).toBe(0)
+	end)
+
+	it("measures how far past the edge a safe player stands, within the tolerance", function()
+		local decision = EliminationRules.decide(5.5, 43.5, 0, { NAMED }, RULES)
+		expect(decision.safe).toBe(true)
+		expect(decision.outsideEdge).toBeCloseTo(0.5)
+	end)
+
+	it("says not on a tile, naming the closest tile and the distance past its edge", function()
+		local far = { x = 30, z = 0, halfX = 5, halfZ = 5, topY = 40.5, name = "Far" }
+		local decision = EliminationRules.decide(8, 43.5, 0, { far, NAMED }, RULES)
+		expect(decision.safe).toBe(false)
+		expect(decision.reason).toBe("not on a tile")
+		expect(decision.tile).toBe(NAMED)
+		expect(decision.outsideEdge).toBeCloseTo(3)
+	end)
+
+	it("says fell too far when over a tile but past the fall margin", function()
+		local decision = EliminationRules.decide(0, 30, 0, { NAMED }, RULES)
+		expect(decision.safe).toBe(false)
+		expect(decision.reason).toBe("fell too far")
+		expect(decision.belowTop).toBeCloseTo(10.5)
+	end)
+
+	it("says no tiles left when the arena is empty", function()
+		local decision = EliminationRules.decide(0, 43.5, 0, {}, RULES)
+		expect(decision.safe).toBe(false)
+		expect(decision.reason).toBe("no tiles left")
+		expect(decision.tile).toBe(nil)
+	end)
+
+	it("agrees with isSafe", function()
+		for _, point in { { 0, 43.5, 0 }, { 6.1, 43.5, 0 }, { 0, 35, 0 }, { 5.9, 36, 5.9 } } do
+			local x, y, z = point[1], point[2], point[3]
+			expect(EliminationRules.decide(x, y, z, { TILE }, RULES).safe).toBe(
+				EliminationRules.isSafe(x, y, z, { TILE }, RULES)
+			)
+		end
+	end)
+end)
+
+describe("EliminationRules.formatDecision", function()
+	local NAMED =
+		{ x = 15, z = -25, halfX = 5, halfZ = 5, topY = 40.5, name = "Tile_1_5", colorId = 5 }
+
+	it("formats a safe decision", function()
+		local decision = EliminationRules.decide(15, 43.6, -25, { NAMED }, RULES)
+		local line = EliminationRules.formatDecision(
+			"Player1",
+			decision,
+			{ x = 15, y = 43.6, z = -25 },
+			RULES
+		)
+		expect(line).toBe(
+			"Player1 safe tile=Tile_1_5 color=5 pos=(15.0, 43.6, -25.0) outside edge 0.0/1.0 below top 0.0/5.0"
+		)
+	end)
+
+	it("formats an out decision with its reason", function()
+		local decision = EliminationRules.decide(15, 20, -25, { NAMED }, RULES)
+		local line =
+			EliminationRules.formatDecision("Player2", decision, { x = 15, y = 20, z = -25 }, RULES)
+		expect(line).toBe(
+			"Player2 out (fell too far) tile=Tile_1_5 color=5 pos=(15.0, 20.0, -25.0) outside edge 0.0/1.0 below top 20.5/5.0"
+		)
+	end)
+
+	it("formats a decision with no tile and no position", function()
+		local decision =
+			{ safe = false, reason = "died this round", tile = nil, outsideEdge = 0, belowTop = 0 }
+		expect(EliminationRules.formatDecision("Player3", decision, nil, RULES)).toBe(
+			"Player3 out (died this round)"
+		)
+	end)
+end)

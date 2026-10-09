@@ -86,6 +86,7 @@ export type ConfigType = {
 		fallMargin: number,
 		edgeTolerance: number,
 		replayTimerBonus: number,
+		logDecisions: boolean,
 	},
 	Hud: {
 		width: number,

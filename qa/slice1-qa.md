@@ -49,7 +49,7 @@ Session length was about 30 minutes, with 19 matches. All 19 resets logged `[Res
 | Players leave during Intermission so fewer than 2 remain (S1-04) | Pass | `Intermission -> Lobby (players 1)` 1.3 s after the leave. The match did not start. |
 | Join while in Lobby | Match flow pass, **placement fail ([#14](https://github.com/7kbytes/ColorPanic/issues/14))** | Player3 joined. The match started with 2 players. Player3's character spawned above the empty arena and fell first. |
 | Join mid-match (rejoin): waits as spectator, plays the next match | Match flow pass, **placement fail ([#14](https://github.com/7kbytes/ColorPanic/issues/14))** | Player4 joined in round 9. It was not counted as a survivor and the HUD was correct (`Players left: 2`). The next match had `players 3, survivors 3`. But Player4's character landed on the arena each round instead of in the spectator area. |
-| Survivor on a target tile is safe | **Fail once ([#15](https://github.com/7kbytes/ColorPanic/issues/15))** | In one match Player1, on a target tile, was judged out twice (a replay, then a shared win). Correct in all 5 later tries. |
+| Survivor on a target tile is safe | **Fail once ([#15](https://github.com/7kbytes/ColorPanic/issues/15))** | In one match Player1, on a target tile, was judged out twice (a replay, then a shared win). Correct in all 5 later tries. *Update (D-03):* caused by the test actor teleporting the character on the client; some teleports never reached the server. Not a game bug. The actor now walks. |
 
 Studio cannot rejoin as the same account. A returning player always gets a new name (Player3, Player4), so a true same-account rejoin was not tested.
 
