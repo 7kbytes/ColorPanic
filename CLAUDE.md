@@ -18,4 +18,14 @@ Read `SPEC.md` fully before doing anything. It holds the requirements, architect
 
 ## Current status
 
-The repository has only an initial commit and no code. Start with task S1-01 (repo and tooling) and propose your approach first.
+Slice 1 tasks S1-01 to S1-08 are merged to `main`:
+
+- S1-01 Repo and tooling, S1-02 Config and Types, S1-03 Remotes
+- S1-04 MatchService state machine, S1-05 ArenaService, S1-06 RoundDirector
+- S1-07 Spawning and placement, S1-08 EliminationService
+
+Tooling on `main` also includes a strict type check with luau-lsp (`scripts/typecheck.sh`) and pure-logic tests with Lune (`scripts/test.sh`). Run both, plus StyLua and Selene, before opening a pull request.
+
+S1-04, S1-07 and S1-08 have not yet been checked against their multiplayer "done when" criteria in Studio.
+
+Next task: S1-09 Placeholder HUD. Propose your approach first. Remaining after that: S1-10, S1-11 and S1-12.
