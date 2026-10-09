@@ -28,6 +28,8 @@ local Config: Types.ConfigType = {
 		-- Studio test flag: when true, a one-player match is allowed in Studio only.
 		studioSinglePlayerEnabled = false,
 		intermissionSeconds = 10,
+		-- How often waiting states check for cancellation, in seconds.
+		pollSeconds = 0.25,
 	},
 
 	-- Durations of the non-Run states, in seconds. Placeholder values, tune in playtests.
