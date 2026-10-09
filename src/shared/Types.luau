@@ -74,6 +74,7 @@ export type ConfigType = {
 		spawnHeight: number,
 		lobbyRgb: { number },
 		spectatorRgb: { number },
+		lobbyCheckRadius: number,
 	},
 	Elimination: {
 		fallMargin: number,
@@ -91,6 +92,7 @@ export type ConfigType = {
 		backgroundRgb: { number },
 		textRgb: { number },
 		decimalBelowSeconds: number,
+		maxWinnerNames: number,
 	},
 	Fairness: {
 		playersPerTargetTile: number,
@@ -122,8 +124,11 @@ export type PlayerEliminatedPayload = {
 	playersLeft: number,
 }
 
+-- Winners in the same order in both lists. Names are display names, sent by the server so
+-- the announcement still works if a winner leaves before a client reads it.
 export type MatchResultPayload = {
 	winnerUserIds: { number },
+	winnerNames: { string },
 }
 
 return {}

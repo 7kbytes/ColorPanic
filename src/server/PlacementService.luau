@@ -142,6 +142,25 @@ function PlacementService.toLobby(player: Player)
 	moveToArea(player, LOBBY_NAME)
 end
 
+-- Horizontal distance in studs from the player's character to the nearest lobby spawn,
+-- or nil if the character has not spawned yet.
+function PlacementService.distanceToLobby(player: Player): number?
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not (root and root:IsA("BasePart")) then
+		return nil
+	end
+	local nearest: number? = nil
+	for _, spawnPart in getSpawns(LOBBY_NAME) do
+		local offset = root.Position - spawnPart.Position
+		local distance = Vector3.new(offset.X, 0, offset.Z).Magnitude
+		if nearest == nil or distance < nearest then
+			nearest = distance
+		end
+	end
+	return nearest
+end
+
 function PlacementService.toSpectator(player: Player)
 	moveToArea(player, SPECTATOR_NAME)
 end

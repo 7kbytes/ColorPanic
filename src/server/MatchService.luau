@@ -14,6 +14,7 @@ local EliminationRules = require(script.Parent.EliminationRules)
 local EliminationService = require(script.Parent.EliminationService)
 local MatchFlow = require(script.Parent.MatchFlow)
 local PlacementService = require(script.Parent.PlacementService)
+local ResetAudit = require(script.Parent.ResetAudit)
 local RoundDirector = require(script.Parent.RoundDirector)
 
 type MatchState = Types.MatchState
@@ -34,6 +35,8 @@ local diedThisRound: { [Player]: boolean } = {} -- survivors whose character die
 local isReplay = false -- the current round is a replay after everyone fell
 local replayPending = false -- the next RoundIntro replays the current round
 local sharedWin = false -- everyone remaining failed a replay and shares the win
+local matchResult: Types.MatchResultPayload? = nil -- set on entering Victory, cleared on Reset
+local baselinePartCount = 0 -- workspace parts before the first match, for the reset audit
 local rng = Random.new()
 -- How long to wait for a new character's Humanoid before giving up on tracking its death.
 local HUMANOID_TIMEOUT = 5
@@ -190,10 +193,18 @@ local function onEnter(previous: MatchState, nextState: MatchState)
 	elseif nextState == "RoundEnd" then
 		resolveRoundEnd()
 	elseif nextState == "Victory" then
+		local winners = getSurvivorList()
+		table.sort(winners, function(a, b)
+			return a.DisplayName < b.DisplayName
+		end)
+		local result: Types.MatchResultPayload = { winnerUserIds = {}, winnerNames = {} }
 		local names: { string } = {}
-		for player in survivors do
+		for _, player in winners do
+			table.insert(result.winnerUserIds, player.UserId)
+			table.insert(result.winnerNames, player.DisplayName)
 			table.insert(names, player.Name)
 		end
+		matchResult = result
 		print(string.format("[Match] Winners: %s", table.concat(names, ", ")))
 	elseif nextState == "Elimination" then
 		if roundParams then
@@ -202,6 +213,7 @@ local function onEnter(previous: MatchState, nextState: MatchState)
 	elseif nextState == "Reset" then
 		endMatch()
 		roundParams = nil
+		matchResult = nil
 		-- Move everyone off the arena before its tiles are removed.
 		for _, player in Players:GetPlayers() do
 			PlacementService.toLobby(player)
@@ -253,6 +265,75 @@ local function sendTarget(player: Player?)
 	end
 end
 
+-- Sends the winners to one player, or to everyone when `player` is nil. Only during Victory.
+local function sendMatchResult(player: Player?)
+	if not (state == "Victory" and matchResult) then
+		return
+	end
+	if player then
+		Remotes.MatchResult.fireTo(player, matchResult)
+	else
+		Remotes.MatchResult.fireAll(matchResult)
+	end
+end
+
+-- BaseParts in the workspace, not counting player characters (they come and go with players).
+local function countWorkspaceParts(): number
+	local characters: { Instance } = {}
+	for _, player in Players:GetPlayers() do
+		if player.Character then
+			table.insert(characters, player.Character)
+		end
+	end
+	local count = 0
+	for _, instance in workspace:GetDescendants() do
+		if instance:IsA("BasePart") then
+			local inCharacter = false
+			for _, character in characters do
+				if instance:IsDescendantOf(character) then
+					inCharacter = true
+					break
+				end
+			end
+			if not inCharacter then
+				count += 1
+			end
+		end
+	end
+	return count
+end
+
+-- Logs whether the match just reset cleanly: no tiles, no tracked players, no extra parts,
+-- and every spawned character back in the lobby.
+local function auditReset()
+	local survivorCount = countSurvivors()
+	local spectatorCount = 0
+	for _ in spectators do
+		spectatorCount += 1
+	end
+	local outsideLobby: { string } = {}
+	for _, player in Players:GetPlayers() do
+		local distance = PlacementService.distanceToLobby(player)
+		if distance and distance > Config.Placement.lobbyCheckRadius then
+			table.insert(outsideLobby, player.Name)
+		end
+	end
+	local partCount = countWorkspaceParts()
+	local problems = ResetAudit.findProblems({
+		tileCount = #ArenaService.getTiles(),
+		survivorCount = survivorCount,
+		spectatorCount = spectatorCount,
+		partCount = partCount,
+		baselinePartCount = baselinePartCount,
+		outsideLobby = outsideLobby,
+	})
+	if #problems == 0 then
+		print(string.format("[Reset] Clean: 0 tiles, %d parts, everyone in the lobby", partCount))
+	else
+		warn("[Reset] Problems after reset: " .. table.concat(problems, "; "))
+	end
+end
+
 local function transition(nextState: MatchState)
 	local previous: MatchState = state
 	onEnter(previous, nextState)
@@ -272,10 +353,17 @@ local function transition(nextState: MatchState)
 		)
 	)
 
+	-- Winners go out before the state, so the HUD can name them the moment Victory shows.
+	-- Separate remotes can arrive in either order; HudModel handles both.
+	if nextState == "Victory" then
+		sendMatchResult(nil)
+	end
 	Remotes.StateChanged.fireAll({ state = state, endsAt = endsAt })
 	if nextState == "RoundIntro" then
 		sendRoundInfo(nil)
 		sendTarget(nil)
+	elseif nextState == "Lobby" and previous == "Reset" then
+		auditReset()
 	end
 end
 
@@ -321,6 +409,7 @@ local function onPlayerAdded(player: Player)
 		task.spawn(onCharacterAdded, player, character)
 	end
 	-- Bring the new player's HUD up to date, including the round in progress.
+	sendMatchResult(player)
 	Remotes.StateChanged.fireTo(player, { state = state, endsAt = endsAt })
 	sendRoundInfo(player)
 	sendTarget(player)
@@ -357,6 +446,8 @@ function MatchService.start()
 	started = true
 
 	PlacementService.init(MatchService.getRole)
+	-- Lobby and spectator areas exist now, and no match has built anything yet.
+	baselinePartCount = countWorkspaceParts()
 
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	Players.PlayerRemoving:Connect(onPlayerRemoving)

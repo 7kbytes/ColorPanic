@@ -1,5 +1,6 @@
 --!strict
 -- Placeholder HUD: plain text for state, round, target color, timer and players left.
+-- During Victory the state line names the winners.
 -- Driven only by server remotes; the timer counts down to the server's endsAt.
 
 local Players = game:GetService("Players")
@@ -111,6 +112,10 @@ function HUDController.start()
 	end)
 	Remotes.PlayerEliminated.connect(function(payload)
 		HudModel.applyEliminated(model, payload)
+		render()
+	end)
+	Remotes.MatchResult.connect(function(payload)
+		HudModel.applyMatchResult(model, payload)
 		render()
 	end)
 

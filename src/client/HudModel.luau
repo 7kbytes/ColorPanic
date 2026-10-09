@@ -15,6 +15,7 @@ export type Model = {
 	round: number?,
 	targetName: string?,
 	playersLeft: number?,
+	winnerNames: { string }?,
 }
 
 export type Lines = {
@@ -54,6 +55,11 @@ end
 function HudModel.applyState(model: Model, payload: Types.StateChangedPayload)
 	model.state = payload.state
 	model.endsAt = payload.endsAt
+	-- MatchResult is only sent for Victory, so any other state clears it. It may arrive
+	-- just before or just after the Victory state; either way the names are kept.
+	if payload.state ~= "Victory" then
+		model.winnerNames = nil
+	end
 	if OUT_OF_MATCH[payload.state] then
 		model.round = nil
 		model.targetName = nil
@@ -74,6 +80,31 @@ function HudModel.applyEliminated(model: Model, payload: Types.PlayerEliminatedP
 	model.playersLeft = payload.playersLeft
 end
 
+function HudModel.applyMatchResult(model: Model, payload: Types.MatchResultPayload)
+	model.winnerNames = table.clone(payload.winnerNames)
+end
+
+-- "Winner: A", "Winners: A and B", "Winners: A, B and C", or with more than
+-- Config.Hud.maxWinnerNames winners "Winners: A, B, C and 2 more". Plain "Victory" if empty.
+function HudModel.formatWinners(names: { string }): string
+	local count = #names
+	if count == 0 then
+		return STATE_TEXT.Victory
+	elseif count == 1 then
+		return "Winner: " .. names[1]
+	end
+
+	local shown = math.min(count, Config.Hud.maxWinnerNames)
+	local listed = table.move(names, 1, shown, 1, {})
+	local last: string
+	if shown < count then
+		last = string.format("%d more", count - shown)
+	else
+		last = table.remove(listed) :: string
+	end
+	return "Winners: " .. table.concat(listed, ", ") .. " and " .. last
+end
+
 -- Seconds left as text: tenths below Config.Hud.decimalBelowSeconds, whole seconds above.
 -- Tenths round down and whole seconds round up, so the display never jumps backwards.
 function HudModel.formatSeconds(remaining: number): string
@@ -90,8 +121,13 @@ function HudModel.lines(model: Model, now: number): Lines
 	local endsAt = model.endsAt
 	local round = model.round
 	local playersLeft = model.playersLeft
+	local winnerNames = model.winnerNames
+	local stateText = if state then STATE_TEXT[state] else EMPTY
+	if state == "Victory" and winnerNames then
+		stateText = HudModel.formatWinners(winnerNames)
+	end
 	return {
-		state = if state then STATE_TEXT[state] else EMPTY,
+		state = stateText,
 		round = "Round: " .. (if round then tostring(round) else EMPTY),
 		target = "Target: " .. (model.targetName or EMPTY),
 		timer = "Time: " .. (if endsAt then HudModel.formatSeconds(endsAt - now) else EMPTY),

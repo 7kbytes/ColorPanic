@@ -153,3 +153,80 @@ describe("HudModel.formatSeconds", function()
 		expect(HudModel.formatSeconds(-3)).toBe("0.0")
 	end)
 end)
+
+describe("HudModel winners", function()
+	local function victory(names: { string })
+		local model = midRound()
+		HudModel.applyState(model, { state = "Victory", endsAt = NOW + 5 })
+		HudModel.applyMatchResult(model, { winnerUserIds = {}, winnerNames = names })
+		return model
+	end
+
+	it("names a single winner on the state line", function()
+		expect(HudModel.lines(victory({ "Alex" }), NOW).state).toBe("Winner: Alex")
+	end)
+
+	it("joins two winners with and", function()
+		expect(HudModel.lines(victory({ "Alex", "Sam" }), NOW).state).toBe("Winners: Alex and Sam")
+	end)
+
+	it("lists every winner when there are exactly as many as the limit", function()
+		local limit = Config.Hud.maxWinnerNames
+		local names = {}
+		for i = 1, limit do
+			table.insert(names, "P" .. i)
+		end
+		-- With a limit of 3: "Winners: P1, P2 and P3".
+		local expected = "Winners: " .. table.concat(names, ", ", 1, limit - 1) .. " and P" .. limit
+		expect(HudModel.formatWinners(names)).toBe(expected)
+	end)
+
+	it("counts the rest once there are more winners than the limit", function()
+		local limit = Config.Hud.maxWinnerNames
+		local names = {}
+		for i = 1, limit + 2 do
+			table.insert(names, "P" .. i)
+		end
+		local shown = {}
+		for i = 1, limit do
+			table.insert(shown, "P" .. i)
+		end
+		expect(HudModel.formatWinners(names)).toBe(
+			"Winners: " .. table.concat(shown, ", ") .. " and 2 more"
+		)
+	end)
+
+	it("falls back to Victory when the list is empty", function()
+		expect(HudModel.lines(victory({}), NOW).state).toBe("Victory")
+	end)
+
+	it("shows Victory until the result arrives", function()
+		local model = midRound()
+		HudModel.applyState(model, { state = "Victory", endsAt = NOW + 5 })
+		expect(HudModel.lines(model, NOW).state).toBe("Victory")
+	end)
+
+	it("names the winners when the result arrives before the Victory state", function()
+		local model = midRound()
+		HudModel.applyState(model, { state = "RoundEnd", endsAt = NOW + 2 })
+		HudModel.applyMatchResult(model, { winnerUserIds = { 1 }, winnerNames = { "Alex" } })
+		expect(HudModel.lines(model, NOW).state).toBe("Round over")
+		HudModel.applyState(model, { state = "Victory", endsAt = NOW + 5 })
+		expect(HudModel.lines(model, NOW).state).toBe("Winner: Alex")
+	end)
+
+	it("clears the winners when Reset starts", function()
+		local model = victory({ "Alex" })
+		HudModel.applyState(model, { state = "Reset", endsAt = NOW + 2 })
+		expect(HudModel.lines(model, NOW).state).toBe("Resetting")
+		HudModel.applyState(model, { state = "Victory", endsAt = NOW + 5 })
+		expect(HudModel.lines(model, NOW).state).toBe("Victory")
+	end)
+
+	it("keeps its own copy of the names", function()
+		local names = { "Alex" }
+		local model = victory(names)
+		names[1] = "Changed"
+		expect(HudModel.lines(model, NOW).state).toBe("Winner: Alex")
+	end)
+end)

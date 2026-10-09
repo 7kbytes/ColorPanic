@@ -58,6 +58,8 @@ local Config: Types.ConfigType = {
 		spawnHeight = 3, -- studs above a spawn or tile top where characters are placed
 		lobbyRgb = { 200, 200, 210 },
 		spectatorRgb = { 170, 200, 230 },
+		-- After a reset, a character further than this from every lobby spawn counts as stuck.
+		lobbyCheckRadius = 40, -- studs
 	},
 
 	-- Who counts as eliminated at the end of the Elimination state (SPEC section 3).
@@ -80,6 +82,8 @@ local Config: Types.ConfigType = {
 		textRgb = { 255, 255, 255 },
 		-- Below this many seconds the timer shows tenths, above it whole seconds.
 		decimalBelowSeconds = 10,
+		-- A shared win names at most this many players, then "and N more", so the line fits.
+		maxWinnerNames = 3,
 	},
 
 	-- At least one target tile per this many surviving players, rounded up (SPEC section 3).
