@@ -80,6 +80,18 @@ export type ConfigType = {
 		edgeTolerance: number,
 		replayTimerBonus: number,
 	},
+	Hud: {
+		width: number,
+		height: number,
+		topMargin: number,
+		minTextSize: number,
+		maxTextSize: number,
+		padding: number,
+		backgroundTransparency: number,
+		backgroundRgb: { number },
+		textRgb: { number },
+		decimalBelowSeconds: number,
+	},
 	Fairness: {
 		playersPerTargetTile: number,
 	},

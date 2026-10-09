@@ -219,6 +219,40 @@ local function getColorName(colorId: ColorId): string
 	return "Unknown"
 end
 
+-- Sends the current round number, timer and survivor count to one player, or to everyone
+-- when `player` is nil. Does nothing outside a round.
+local function sendRoundInfo(player: Player?)
+	if not (inMatch and roundParams) then
+		return
+	end
+	local payload = {
+		round = round,
+		timerSeconds = roundParams.timerSeconds,
+		playersLeft = countSurvivors(),
+	}
+	if player then
+		Remotes.RoundInfo.fireTo(player, payload)
+	else
+		Remotes.RoundInfo.fireAll(payload)
+	end
+end
+
+-- Sends the current target color to one player, or to everyone when `player` is nil.
+local function sendTarget(player: Player?)
+	if not (inMatch and roundParams) then
+		return
+	end
+	local payload = {
+		colorId = roundParams.targetColorId,
+		name = getColorName(roundParams.targetColorId),
+	}
+	if player then
+		Remotes.TargetAnnounced.fireTo(player, payload)
+	else
+		Remotes.TargetAnnounced.fireAll(payload)
+	end
+end
+
 local function transition(nextState: MatchState)
 	local previous: MatchState = state
 	onEnter(previous, nextState)
@@ -239,16 +273,9 @@ local function transition(nextState: MatchState)
 	)
 
 	Remotes.StateChanged.fireAll({ state = state, endsAt = endsAt })
-	if nextState == "RoundIntro" and roundParams then
-		Remotes.RoundInfo.fireAll({
-			round = round,
-			timerSeconds = roundParams.timerSeconds,
-			playersLeft = countSurvivors(),
-		})
-		Remotes.TargetAnnounced.fireAll({
-			colorId = roundParams.targetColorId,
-			name = getColorName(roundParams.targetColorId),
-		})
+	if nextState == "RoundIntro" then
+		sendRoundInfo(nil)
+		sendTarget(nil)
 	end
 end
 
@@ -293,14 +320,21 @@ local function onPlayerAdded(player: Player)
 	if character then
 		task.spawn(onCharacterAdded, player, character)
 	end
+	-- Bring the new player's HUD up to date, including the round in progress.
 	Remotes.StateChanged.fireTo(player, { state = state, endsAt = endsAt })
+	sendRoundInfo(player)
+	sendTarget(player)
 end
 
 local function onPlayerRemoving(player: Player)
 	-- Leaving removes the player from the survivor count without ending the round.
+	local wasSurvivor = survivors[player] == true
 	survivors[player] = nil
 	spectators[player] = nil
 	diedThisRound[player] = nil
+	if wasSurvivor then
+		sendRoundInfo(nil)
+	end
 end
 
 function MatchService.getState(): MatchState

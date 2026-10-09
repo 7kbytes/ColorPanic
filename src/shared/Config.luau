@@ -67,6 +67,21 @@ local Config: Types.ConfigType = {
 		replayTimerBonus = 3, -- extra seconds when a round is replayed after everyone fell
 	},
 
+	-- Placeholder HUD (S1-09). Sizes are fractions of the screen so it scales to phones.
+	Hud = {
+		width = 0.4, -- fraction of screen width
+		height = 0.2, -- fraction of screen height
+		topMargin = 0.01, -- fraction of screen height above the panel
+		minTextSize = 10,
+		maxTextSize = 28,
+		padding = 6, -- pixels inside the panel
+		backgroundTransparency = 0.4,
+		backgroundRgb = { 20, 20, 30 },
+		textRgb = { 255, 255, 255 },
+		-- Below this many seconds the timer shows tenths, above it whole seconds.
+		decimalBelowSeconds = 10,
+	},
+
 	-- At least one target tile per this many surviving players, rounded up (SPEC section 3).
 	Fairness = {
 		playersPerTargetTile = 2,
