@@ -44,6 +44,22 @@ local Config: Types.ConfigType = {
 		Reset = 2,
 	},
 
+	-- Placeholder lobby and spectator areas, used until the builder delivers real ones (slice 2).
+	-- Origins are the centre of each platform's top surface. The arena spans z -30 to 30 at
+	-- height 40, so the spectator platform sits beside it and above it.
+	Placement = {
+		lobbyOrigin = { 0, 1, 100 },
+		spectatorOrigin = { 0, 50, -60 },
+		placeholderSpawnCount = 12,
+		placeholderColumns = 4,
+		spawnSpacing = 6, -- studs between placeholder spawns
+		platformMargin = 6, -- studs of platform around the outer spawns
+		platformThickness = 1,
+		spawnHeight = 3, -- studs above a spawn or tile top where characters are placed
+		lobbyRgb = { 200, 200, 210 },
+		spectatorRgb = { 170, 200, 230 },
+	},
+
 	-- At least one target tile per this many surviving players, rounded up (SPEC section 3).
 	Fairness = {
 		playersPerTargetTile = 2,

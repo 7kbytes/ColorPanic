@@ -29,6 +29,9 @@ export type MatchState =
 	| "Victory"
 	| "Reset"
 
+-- Where a player belongs right now. Survivors are on the arena, spectators wait to the side.
+export type PlayerRole = "Lobby" | "Survivor" | "Spectator"
+
 export type RoundParams = {
 	round: number,
 	timerSeconds: number,
@@ -59,6 +62,18 @@ export type ConfigType = {
 		RoundEnd: number,
 		Victory: number,
 		Reset: number,
+	},
+	Placement: {
+		lobbyOrigin: { number },
+		spectatorOrigin: { number },
+		placeholderSpawnCount: number,
+		placeholderColumns: number,
+		spawnSpacing: number,
+		platformMargin: number,
+		platformThickness: number,
+		spawnHeight: number,
+		lobbyRgb: { number },
+		spectatorRgb: { number },
 	},
 	Fairness: {
 		playersPerTargetTile: number,
