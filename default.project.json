@@ -1,6 +1,5 @@
 {
   "name": "ColorPanic",
-  "emitLegacyScripts": false,
   "tree": {
     "$className": "DataModel",
     "ServerScriptService": {
