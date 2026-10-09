@@ -144,7 +144,7 @@ local function getColorName(colorId: ColorId): string
 end
 
 local function transition(nextState: MatchState)
-	local previous = state
+	local previous: MatchState = state
 	onEnter(previous, nextState)
 
 	local duration = getDuration(nextState)
