@@ -44,6 +44,11 @@ local Config: Types.ConfigType = {
 		Reset = 2,
 	},
 
+	-- At least one target tile per this many surviving players, rounded up (SPEC section 3).
+	Fairness = {
+		playersPerTargetTile = 2,
+	},
+
 	-- Draft values from SPEC section 5. lastRound = nil means open-ended.
 	-- The timer moves linearly from timerStart to timerEnd across the row's rounds.
 	Difficulty = {

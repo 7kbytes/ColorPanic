@@ -3,3 +3,6 @@
 
 # Luau sources are always LF so StyLua (line_endings = "Unix") passes on Windows
 *.luau text eol=lf
+
+# Shell scripts must be LF or bash fails on Windows checkouts
+*.sh text eol=lf

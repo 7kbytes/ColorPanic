@@ -30,15 +30,19 @@ rojo serve
 
 Then open a place in Studio and click Connect in the Rojo plugin (default port 34872).
 
-## Format and lint
+## Format, lint, type check and test
 
 ```bash
-stylua src
-stylua --check src
+stylua src tests
+stylua --check src tests
 selene src
+bash scripts/typecheck.sh
+bash scripts/test.sh
 ```
 
-Run both before opening a pull request.
+Run all of these before opening a pull request.
+
+`scripts/test.sh` runs the pure-logic tests in `tests/*.spec.luau` with [Lune](https://github.com/lune-org/lune) (pinned in `rokit.toml`), outside Studio. `tests/harness.luau` reads the Rojo sourcemap so modules can keep their Roblox-style requires (`script.Parent.X`, `game:GetService(...)`). Only pure modules (no real services or instances) can be tested this way: Config, Types, Util, MatchFlow, RoundDirector and ArenaLayout today. To add tests, create `tests/<Name>.spec.luau` using `describe`, `it` and `expect` from the harness. The type check uses luau-lsp (pinned in `rokit.toml`) with Roblox API types and a Rojo sourcemap, so `--!strict` errors and bad requires are caught outside Studio. On first run it downloads the Roblox type definitions for the pinned luau-lsp version into `.luau-lsp/` (git-ignored). On Windows, run it from Git Bash.
 
 ## Layout
 
