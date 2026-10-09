@@ -11,10 +11,12 @@ local Types = require(ReplicatedStorage.Shared.Types)
 local Util = require(ReplicatedStorage.Shared.Util)
 local ArenaService = require(script.Parent.ArenaService)
 local MatchFlow = require(script.Parent.MatchFlow)
+local PlacementService = require(script.Parent.PlacementService)
 local RoundDirector = require(script.Parent.RoundDirector)
 
 type MatchState = Types.MatchState
 type ColorId = Types.ColorId
+type PlayerRole = Types.PlayerRole
 
 local MatchService = {}
 
@@ -106,6 +108,13 @@ local function onEnter(previous: MatchState, nextState: MatchState)
 			colorId = params.targetColorId,
 			minCount = params.minTargetTiles,
 		})
+		if previous == "Intermission" then
+			local participants: { Player } = {}
+			for player in survivors do
+				table.insert(participants, player)
+			end
+			PlacementService.toArena(participants)
+		end
 	elseif nextState == "Elimination" then
 		if roundParams then
 			ArenaService.removeNonTarget(roundParams.targetColorId)
@@ -113,6 +122,10 @@ local function onEnter(previous: MatchState, nextState: MatchState)
 	elseif nextState == "Reset" then
 		endMatch()
 		roundParams = nil
+		-- Move everyone off the arena before its tiles are removed.
+		for _, player in Players:GetPlayers() do
+			PlacementService.toLobby(player)
+		end
 		ArenaService.cleanup()
 	end
 end
@@ -191,9 +204,21 @@ function MatchService.getState(): MatchState
 	return state
 end
 
+-- Where a player belongs right now: on the arena, in the spectator area, or in the lobby.
+function MatchService.getRole(player: Player): PlayerRole
+	if survivors[player] then
+		return "Survivor"
+	elseif spectators[player] then
+		return "Spectator"
+	end
+	return "Lobby"
+end
+
 function MatchService.start()
 	assert(not started, "MatchService.start() called twice")
 	started = true
+
+	PlacementService.init(MatchService.getRole)
 
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	Players.PlayerRemoving:Connect(onPlayerRemoving)
