@@ -30,15 +30,16 @@ rojo serve
 
 Then open a place in Studio and click Connect in the Rojo plugin (default port 34872).
 
-## Format and lint
+## Format, lint and type check
 
 ```bash
 stylua src
 stylua --check src
 selene src
+bash scripts/typecheck.sh
 ```
 
-Run both before opening a pull request.
+Run all of these before opening a pull request. The type check uses luau-lsp (pinned in `rokit.toml`) with Roblox API types and a Rojo sourcemap, so `--!strict` errors and bad requires are caught outside Studio. On first run it downloads the Roblox type definitions for the pinned luau-lsp version into `.luau-lsp/` (git-ignored). On Windows, run it from Git Bash.
 
 ## Layout
 
