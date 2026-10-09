@@ -7,3 +7,7 @@
 # Studio lock and backup files
 *.rbxl.lock
 *.rbxlx.lock
+
+# Type checking (scripts/typecheck.sh)
+sourcemap.json
+.luau-lsp/
