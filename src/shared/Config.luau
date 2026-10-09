@@ -6,15 +6,15 @@ local Types = require(script.Parent.Types)
 local Util = require(script.Parent.Util)
 
 local Config: Types.ConfigType = {
-	-- Placeholder palette. Replaced by the artist's approved palette before slice 2.
-	-- Ids 1 to 6 are reserved so shapes can attach to them later.
+	-- Final palette from the artist, copied from art/palette.json (a test keeps them in step).
+	-- The only place in the game that defines a color, its name, hex or shape.
 	Colors = {
-		{ id = 1, name = "Red", rgb = { 235, 64, 52 } },
-		{ id = 2, name = "Blue", rgb = { 52, 120, 235 } },
-		{ id = 3, name = "Green", rgb = { 60, 190, 80 } },
-		{ id = 4, name = "Yellow", rgb = { 250, 215, 50 } },
-		{ id = 5, name = "Purple", rgb = { 150, 80, 210 } },
-		{ id = 6, name = "Orange", rgb = { 245, 140, 40 } },
+		{ id = 1, name = "Red", hex = "#E8383D", shape = "heart" },
+		{ id = 2, name = "Orange", hex = "#FF8A1F", shape = "triangle" },
+		{ id = 3, name = "Yellow", hex = "#FFD60A", shape = "star" },
+		{ id = 4, name = "Blue", hex = "#3FB6F0", shape = "circle" },
+		{ id = 5, name = "Purple", hex = "#5B4BDB", shape = "square" },
+		{ id = 6, name = "Pink", hex = "#D6339F", shape = "diamond" },
 	},
 
 	Arena = {

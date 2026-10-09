@@ -1,0 +1,48 @@
+{
+  "note": "Proposal from the artist role. Pending producer approval. Names are kid-friendly game names; shapes pair 1:1 with colors. delta_e is CIE76 in Lab, worst case across normal, protan, deutan and tritan simulation (Machado 2009, severity 1.0).",
+  "colors": [
+    {
+      "id": 1,
+      "name": "Red",
+      "hex": "#E8383D",
+      "shape": "heart"
+    },
+    {
+      "id": 2,
+      "name": "Orange",
+      "hex": "#FF8A1F",
+      "shape": "triangle"
+    },
+    {
+      "id": 3,
+      "name": "Yellow",
+      "hex": "#FFD60A",
+      "shape": "star"
+    },
+    {
+      "id": 4,
+      "name": "Blue",
+      "hex": "#3FB6F0",
+      "shape": "circle"
+    },
+    {
+      "id": 5,
+      "name": "Purple",
+      "hex": "#5B4BDB",
+      "shape": "square"
+    },
+    {
+      "id": 6,
+      "name": "Pink",
+      "hex": "#D6339F",
+      "shape": "diamond"
+    }
+  ],
+  "weakest_pairs": {
+    "Orange/Yellow": 19.8,
+    "Orange/Pink": 21.8,
+    "Red/Orange": 29.2,
+    "Blue/Pink": 29.7
+  },
+  "min_delta_e": 19.8
+}

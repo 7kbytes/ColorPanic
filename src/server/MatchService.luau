@@ -252,12 +252,8 @@ local function onEnter(previous: MatchState, nextState: MatchState)
 end
 
 local function getColorName(colorId: ColorId): string
-	for _, colorDef in Config.Colors do
-		if colorDef.id == colorId then
-			return colorDef.name
-		end
-	end
-	return "Unknown"
+	local colorDef = Util.getColorDef(Config.Colors, colorId)
+	return if colorDef then colorDef.name else "Unknown"
 end
 
 -- Sends the current round number, timer and survivor count to one player, or to everyone
