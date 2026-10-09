@@ -20,6 +20,9 @@ local Config: Types.ConfigType = {
 	Arena = {
 		gridSize = 6,
 		tileSize = 10, -- studs
+		tileHeight = 1, -- studs
+		-- Centre of the grid. Placeholder until the builder delivers the arena (slice 2).
+		origin = { 0, 40, 0 },
 	},
 
 	Match = {
