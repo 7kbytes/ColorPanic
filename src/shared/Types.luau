@@ -41,6 +41,8 @@ export type ConfigType = {
 	Arena: {
 		gridSize: number,
 		tileSize: number,
+		tileHeight: number,
+		origin: { number },
 	},
 	Match: {
 		minPlayers: number,
