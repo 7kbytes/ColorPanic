@@ -93,7 +93,23 @@ function ArenaService.build(colorIds: { ColorId }, guarantee: ArenaLayout.Guaran
 		end
 	end
 
-	print(string.format("[Arena] Built %d tiles with %d colors", #folder:GetChildren(), #colorIds))
+	local summary =
+		string.format("[Arena] Built %d tiles with %d colors", #folder:GetChildren(), #colorIds)
+	if guarantee then
+		local targetCount = 0
+		for _, colorId in layout do
+			if colorId == guarantee.colorId then
+				targetCount += 1
+			end
+		end
+		summary ..= string.format(
+			", target color %d on %d tiles (minimum %d)",
+			guarantee.colorId,
+			targetCount,
+			guarantee.minCount
+		)
+	end
+	print(summary)
 end
 
 -- Destroys every tile that is not the target color. Returns how many tiles remain.

@@ -11,6 +11,7 @@ local Types = require(ReplicatedStorage.Shared.Types)
 local Util = require(ReplicatedStorage.Shared.Util)
 local ArenaService = require(script.Parent.ArenaService)
 local MatchFlow = require(script.Parent.MatchFlow)
+local RoundDirector = require(script.Parent.RoundDirector)
 
 type MatchState = Types.MatchState
 type ColorId = Types.ColorId
@@ -24,7 +25,7 @@ local inMatch = false
 local survivors: { [Player]: boolean } = {}
 local spectators: { [Player]: boolean } = {} -- joined mid-match, wait for the next match
 local started = false
-local targetColorId: ColorId? = nil
+local roundParams: Types.RoundParams? = nil -- set on entering RoundIntro
 local rng = Random.new()
 
 local function countPlayers(): number
@@ -43,34 +44,13 @@ local function getMinPlayers(): number
 	return Util.getMinPlayers(Config.Match, RunService:IsStudio())
 end
 
--- Placeholder until RoundDirector (S1-06) supplies the per-round timer.
-local function getRunSeconds(): number
-	return Config.Difficulty[1].timerStart
-end
-
--- Placeholder until RoundDirector (S1-06): picks this round's colors and target at random,
--- using the color count from the first difficulty row.
-local function pickRoundColors(): ({ ColorId }, ColorId)
-	local ids: { ColorId } = {}
-	for _, colorDef in Config.Colors do
-		table.insert(ids, colorDef.id)
-	end
-	for i = #ids, 2, -1 do
-		local j = rng:NextInteger(1, i)
-		ids[i], ids[j] = ids[j], ids[i]
-	end
-	local colorCount = math.min(Config.Difficulty[1].colorCount, #ids)
-	local roundColors = table.move(ids, 1, colorCount, 1, {})
-	return roundColors, roundColors[rng:NextInteger(1, colorCount)]
-end
-
 local function getDuration(nextState: MatchState): number?
 	if nextState == "Lobby" then
 		return nil
 	elseif nextState == "Intermission" then
 		return Config.Match.intermissionSeconds
 	elseif nextState == "Run" then
-		return getRunSeconds()
+		return if roundParams then roundParams.timerSeconds else nil
 	elseif nextState == "RoundIntro" then
 		return Config.StateSeconds.RoundIntro
 	elseif nextState == "Elimination" then
@@ -120,16 +100,19 @@ local function onEnter(previous: MatchState, nextState: MatchState)
 			startMatch()
 		end
 		round += 1
-		local roundColors, target = pickRoundColors()
-		targetColorId = target
-		ArenaService.build(roundColors)
+		local params = RoundDirector.getRoundParams(Config, round, countSurvivors(), rng)
+		roundParams = params
+		ArenaService.build(params.colorIds, {
+			colorId = params.targetColorId,
+			minCount = params.minTargetTiles,
+		})
 	elseif nextState == "Elimination" then
-		if targetColorId then
-			ArenaService.removeNonTarget(targetColorId)
+		if roundParams then
+			ArenaService.removeNonTarget(roundParams.targetColorId)
 		end
 	elseif nextState == "Reset" then
 		endMatch()
-		targetColorId = nil
+		roundParams = nil
 		ArenaService.cleanup()
 	end
 end
@@ -163,18 +146,16 @@ local function transition(nextState: MatchState)
 	)
 
 	Remotes.StateChanged.fireAll({ state = state, endsAt = endsAt })
-	if nextState == "RoundIntro" then
+	if nextState == "RoundIntro" and roundParams then
 		Remotes.RoundInfo.fireAll({
 			round = round,
-			timerSeconds = getRunSeconds(),
+			timerSeconds = roundParams.timerSeconds,
 			playersLeft = countSurvivors(),
 		})
-		if targetColorId then
-			Remotes.TargetAnnounced.fireAll({
-				colorId = targetColorId,
-				name = getColorName(targetColorId),
-			})
-		end
+		Remotes.TargetAnnounced.fireAll({
+			colorId = roundParams.targetColorId,
+			name = getColorName(roundParams.targetColorId),
+		})
 	end
 end
 

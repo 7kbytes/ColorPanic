@@ -34,6 +34,8 @@ export type RoundParams = {
 	timerSeconds: number,
 	colorCount: number,
 	targetColorId: ColorId,
+	colorIds: { ColorId },
+	minTargetTiles: number,
 }
 
 export type ConfigType = {
@@ -57,6 +59,9 @@ export type ConfigType = {
 		RoundEnd: number,
 		Victory: number,
 		Reset: number,
+	},
+	Fairness: {
+		playersPerTargetTile: number,
 	},
 	Difficulty: { DifficultyRow },
 }
