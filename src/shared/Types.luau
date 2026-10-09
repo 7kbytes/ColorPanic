@@ -47,6 +47,7 @@ export type ConfigType = {
 		studioMinPlayers: number,
 		studioSinglePlayerEnabled: boolean,
 		intermissionSeconds: number,
+		pollSeconds: number,
 	},
 	StateSeconds: {
 		RoundIntro: number,
