@@ -10,6 +10,8 @@ local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Util = require(ReplicatedStorage.Shared.Util)
 local ArenaService = require(script.Parent.ArenaService)
+local EliminationRules = require(script.Parent.EliminationRules)
+local EliminationService = require(script.Parent.EliminationService)
 local MatchFlow = require(script.Parent.MatchFlow)
 local PlacementService = require(script.Parent.PlacementService)
 local RoundDirector = require(script.Parent.RoundDirector)
@@ -28,7 +30,13 @@ local survivors: { [Player]: boolean } = {}
 local spectators: { [Player]: boolean } = {} -- joined mid-match, wait for the next match
 local started = false
 local roundParams: Types.RoundParams? = nil -- set on entering RoundIntro
+local diedThisRound: { [Player]: boolean } = {} -- survivors whose character died this round
+local isReplay = false -- the current round is a replay after everyone fell
+local replayPending = false -- the next RoundIntro replays the current round
+local sharedWin = false -- everyone remaining failed a replay and shares the win
 local rng = Random.new()
+-- How long to wait for a new character's Humanoid before giving up on tracking its death.
+local HUMANOID_TIMEOUT = 5
 
 local function countPlayers(): number
 	return #Players:GetPlayers()
@@ -77,11 +85,19 @@ local function waitFor(seconds: number, cancelIf: (() -> boolean)?): boolean
 	return true
 end
 
+local function resetRoundFlags()
+	table.clear(diedThisRound)
+	isReplay = false
+	replayPending = false
+	sharedWin = false
+end
+
 local function startMatch()
 	inMatch = true
 	round = 0
 	table.clear(survivors)
 	table.clear(spectators)
+	resetRoundFlags()
 	for _, player in Players:GetPlayers() do
 		survivors[player] = true
 	end
@@ -92,29 +108,93 @@ local function endMatch()
 	round = 0
 	table.clear(survivors)
 	table.clear(spectators)
+	resetRoundFlags()
+end
+
+local function getSurvivorList(): { Player }
+	local list: { Player } = {}
+	for player in survivors do
+		table.insert(list, player)
+	end
+	return list
+end
+
+local function eliminate(player: Player)
+	survivors[player] = nil
+	spectators[player] = true
+	local playersLeft = countSurvivors()
+	print(string.format("[Elimination] %s is out, %d left", player.Name, playersLeft))
+	PlacementService.toSpectator(player)
+	Remotes.PlayerEliminated.fireAll({ userId = player.UserId, playersLeft = playersLeft })
+end
+
+-- Runs at the end of the Elimination state, once players have had time to fall.
+local function resolveRoundEnd()
+	local list = getSurvivorList()
+	local safe = EliminationService.findSafe(list, diedThisRound)
+	local outcome = EliminationRules.resolveRound(#safe, #list, isReplay)
+
+	if outcome == "replay" then
+		replayPending = true
+		print(string.format("[Elimination] All %d would be out, replaying round %d", #list, round))
+		return
+	elseif outcome == "sharedWin" then
+		sharedWin = true
+		print(
+			string.format(
+				"[Elimination] All %d fell again on the replay, they share the win",
+				#list
+			)
+		)
+		return
+	end
+
+	local isSafe: { [Player]: boolean } = {}
+	for _, player in safe do
+		isSafe[player] = true
+	end
+	for _, player in list do
+		if not isSafe[player] then
+			eliminate(player)
+		end
+	end
 end
 
 -- Side effects of entering a state, run before the state is announced.
--- EliminationService (S1-08) will decide who is out after Elimination removes tiles. Until then nobody is.
 local function onEnter(previous: MatchState, nextState: MatchState)
 	if nextState == "RoundIntro" then
 		if previous == "Intermission" then
 			startMatch()
 		end
-		round += 1
+		local replaying = replayPending
+		replayPending = false
+		isReplay = replaying
+		if not replaying then
+			round += 1
+		end
+		table.clear(diedThisRound)
+
 		local params = RoundDirector.getRoundParams(Config, round, countSurvivors(), rng)
+		if replaying then
+			params.timerSeconds += Config.Elimination.replayTimerBonus
+		end
 		roundParams = params
 		ArenaService.build(params.colorIds, {
 			colorId = params.targetColorId,
 			minCount = params.minTargetTiles,
 		})
-		if previous == "Intermission" then
-			local participants: { Player } = {}
-			for player in survivors do
-				table.insert(participants, player)
-			end
-			PlacementService.toArena(participants)
+		-- Put players on the arena at match start, and again on a replay since everyone fell.
+		if previous == "Intermission" or replaying then
+			PlacementService.toArena(getSurvivorList())
 		end
+	elseif nextState == "RoundEnd" then
+		resolveRoundEnd()
+	elseif nextState == "Victory" then
+		local names: { string } = {}
+		for player in survivors do
+			table.insert(names, player.Name)
+		end
+		print(string.format("[Match] Winners: %s", table.concat(names, ", ")))
 	elseif nextState == "Elimination" then
 		if roundParams then
 			ArenaService.removeNonTarget(roundParams.targetColorId)
@@ -187,9 +267,31 @@ local function runCurrentState()
 	end
 end
 
+-- A survivor whose character dies during a round (including a reset) is out at the next check.
+local function onCharacterAdded(player: Player, character: Model)
+	local humanoid = character:WaitForChild("Humanoid", HUMANOID_TIMEOUT)
+	if not humanoid or not humanoid:IsA("Humanoid") then
+		return
+	end
+	humanoid.Died:Connect(function()
+		local inRound = state == "RoundIntro" or state == "Run" or state == "Elimination"
+		if inMatch and inRound and survivors[player] and not diedThisRound[player] then
+			diedThisRound[player] = true
+			print(string.format("[Elimination] %s died during round %d", player.Name, round))
+		end
+	end)
+end
+
 local function onPlayerAdded(player: Player)
 	if inMatch then
 		spectators[player] = true
+	end
+	player.CharacterAdded:Connect(function(character)
+		onCharacterAdded(player, character)
+	end)
+	local character = player.Character
+	if character then
+		task.spawn(onCharacterAdded, player, character)
 	end
 	Remotes.StateChanged.fireTo(player, { state = state, endsAt = endsAt })
 end
@@ -198,6 +300,7 @@ local function onPlayerRemoving(player: Player)
 	-- Leaving removes the player from the survivor count without ending the round.
 	survivors[player] = nil
 	spectators[player] = nil
+	diedThisRound[player] = nil
 end
 
 function MatchService.getState(): MatchState
@@ -205,10 +308,11 @@ function MatchService.getState(): MatchState
 end
 
 -- Where a player belongs right now: on the arena, in the spectator area, or in the lobby.
+-- A survivor who died this round waits in the spectator area until the round is resolved.
 function MatchService.getRole(player: Player): PlayerRole
-	if survivors[player] then
+	if survivors[player] and not diedThisRound[player] then
 		return "Survivor"
-	elseif spectators[player] then
+	elseif survivors[player] or spectators[player] then
 		return "Spectator"
 	end
 	return "Lobby"
@@ -234,6 +338,7 @@ function MatchService.start()
 				playerCount = countPlayers(),
 				survivorCount = countSurvivors(),
 				minPlayers = getMinPlayers(),
+				sharedWin = sharedWin,
 			}))
 		end
 	end)

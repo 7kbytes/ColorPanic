@@ -60,6 +60,13 @@ local Config: Types.ConfigType = {
 		spectatorRgb = { 170, 200, 230 },
 	},
 
+	-- Who counts as eliminated at the end of the Elimination state (SPEC section 3).
+	Elimination = {
+		fallMargin = 5, -- studs below a tile top before a player counts as fallen
+		edgeTolerance = 1, -- studs past a tile edge that still count as standing on it
+		replayTimerBonus = 3, -- extra seconds when a round is replayed after everyone fell
+	},
+
 	-- At least one target tile per this many surviving players, rounded up (SPEC section 3).
 	Fairness = {
 		playersPerTargetTile = 2,

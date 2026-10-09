@@ -40,3 +40,15 @@ describe("MatchFlow.nextState", function()
 		end)
 	end
 end)
+
+describe("MatchFlow.nextState shared win", function()
+	it("RoundEnd goes to Victory on a shared win even with several survivors", function()
+		local context = { playerCount = 3, survivorCount = 3, minPlayers = 2, sharedWin = true }
+		expect(MatchFlow.nextState("RoundEnd", context)).toBe("Victory")
+	end)
+
+	it("RoundEnd still loops when sharedWin is false", function()
+		local context = { playerCount = 3, survivorCount = 3, minPlayers = 2, sharedWin = false }
+		expect(MatchFlow.nextState("RoundEnd", context)).toBe("RoundIntro")
+	end)
+end)
