@@ -9,6 +9,7 @@ export type FlowContext = {
 	playerCount: number, -- players connected to the server
 	survivorCount: number, -- participants still in the match
 	minPlayers: number, -- minimum players needed to start
+	sharedWin: boolean?, -- everyone remaining failed a replayed round and shares the win
 }
 
 local MatchFlow = {}
@@ -37,6 +38,9 @@ function MatchFlow.nextState(state: MatchState, ctx: FlowContext): MatchState
 	end
 
 	-- RoundEnd
+	if ctx.sharedWin then
+		return "Victory"
+	end
 	return if ctx.survivorCount >= 2 then "RoundIntro" else "Victory"
 end
 

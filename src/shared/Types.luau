@@ -75,6 +75,11 @@ export type ConfigType = {
 		lobbyRgb: { number },
 		spectatorRgb: { number },
 	},
+	Elimination: {
+		fallMargin: number,
+		edgeTolerance: number,
+		replayTimerBonus: number,
+	},
 	Fairness: {
 		playersPerTargetTile: number,
 	},
