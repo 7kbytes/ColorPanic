@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Luau sources are always LF so StyLua (line_endings = "Unix") passes on Windows
+*.luau text eol=lf

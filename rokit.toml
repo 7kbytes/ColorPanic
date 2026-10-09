@@ -1,0 +1,7 @@
+# Pinned tool versions, managed by Rokit (https://github.com/rojo-rbx/rokit).
+# Run `rokit install` to fetch them.
+
+[tools]
+rojo = "rojo-rbx/rojo@7.7.1"
+stylua = "JohnnyMorganz/stylua@2.5.2"
+selene = "Kampfkarren/selene@0.32.0"
