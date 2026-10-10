@@ -13,6 +13,7 @@ local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
 local HUDController = require(script.Parent.HUDController)
 local MenuModel = require(script.Parent.MenuModel)
+local Sfx = require(script.Parent.Sfx)
 
 local MATCH_ROLE_ATTRIBUTE = "MatchRole"
 -- Above the HUD.
@@ -216,6 +217,7 @@ function MenuController.start()
 			return
 		end
 		button.Active = false
+		Sfx.play("click")
 		request.fire()
 		task.delay(Config.Queue.requestCooldown, function()
 			button.Active = true

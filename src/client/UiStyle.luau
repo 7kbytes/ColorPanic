@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Util = require(ReplicatedStorage.Shared.Util)
+local Sfx = require(script.Parent.Sfx)
 
 local HUD = Config.Hud
 
@@ -99,7 +100,7 @@ local function makeText(
 	return label
 end
 
--- A rounded button with outlined text, in the HUD font.
+-- A rounded button with outlined text, in the HUD font. Clicks play the click sound.
 local function makeButton(name: string, text: string, rgb: { number }): TextButton
 	local button = Instance.new("TextButton")
 	button.Name = name
@@ -121,6 +122,9 @@ local function makeButton(name: string, text: string, rgb: { number }): TextButt
 	stroke.Color = toColor3(HUD.strokeRgb)
 	stroke.Thickness = HUD.strokeThickness
 	stroke.Parent = button
+	button.Activated:Connect(function()
+		Sfx.play("click")
+	end)
 	return button
 end
 

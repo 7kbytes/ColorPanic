@@ -223,9 +223,33 @@ local Config: Types.ConfigType = {
 		winnerRgb = { 255, 214, 10 }, -- place text for winners
 	},
 
+	-- Audio (D-08). Volumes are 0 to 1. Pitches are Sound.PlaybackSpeed multipliers.
+	Audio = {
+		sfxVolume = 0.8,
+		musicVolume = 0.3,
+		musicFadeSeconds = 1, -- crossfade when the music changes
+		tickFinalPitch = 1.35, -- the last countdown tick
+		hidePitch = 0.8, -- the reveal chime, played lower when the target hides
+		logCues = false, -- QA: print every sound as it plays
+	},
+
 	-- Roblox Image asset IDs (owner: the game's owner), from "Color Panic Asset IDs.xlsx".
 	-- Only the assets the code uses so far; later tasks add theirs. 0 shows a text fallback.
 	Assets = {
+		-- Roblox Audio asset IDs (S-01 to S-11), owned by the game's owner. 0 skips the sound.
+		Sounds = {
+			click = 88099638296328,
+			tick = 101813031315495,
+			roundStart = 98620534814039,
+			reveal = 134025852579124,
+			tileDrop = 107728816607408,
+			fall = 81600766513994,
+			eliminated = 119806547942563,
+			survived = 113177692622900,
+			winFanfare = 136707128772493,
+			lobbyMusic = 139403154782279,
+			matchMusic = 106478061958089,
+		},
 		Images = {
 			-- White, tinted in game with the palette color (A-02).
 			shapeIcon = {

@@ -169,8 +169,29 @@ export type ConfigType = {
 		finalRgb: { number },
 		replayRgb: { number },
 	},
+	Audio: {
+		sfxVolume: number,
+		musicVolume: number,
+		musicFadeSeconds: number,
+		tickFinalPitch: number,
+		hidePitch: number,
+		logCues: boolean,
+	},
 	-- Roblox asset IDs. 0 means not uploaded yet: the UI shows a text fallback instead.
 	Assets: {
+		Sounds: {
+			click: number,
+			tick: number,
+			roundStart: number,
+			reveal: number,
+			tileDrop: number,
+			fall: number,
+			eliminated: number,
+			survived: number,
+			winFanfare: number,
+			lobbyMusic: number,
+			matchMusic: number,
+		},
 		Images: {
 			shapeIcon: { [ShapeId]: number },
 			shapeTile: { [ShapeId]: number },
