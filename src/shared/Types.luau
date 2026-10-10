@@ -34,7 +34,8 @@ export type MatchState =
 	| "Reset"
 
 -- Where a player belongs right now. Survivors are on the arena, spectators wait to the side.
-export type PlayerRole = "Lobby" | "Survivor" | "Spectator"
+-- Menu: has not pressed Play (or pressed Leave), has no character and is not queued.
+export type PlayerRole = "Menu" | "Lobby" | "Survivor" | "Spectator"
 
 export type RoundParams = {
 	round: number,
@@ -102,6 +103,28 @@ export type ConfigType = {
 		textRgb: { number },
 		decimalBelowSeconds: number,
 		maxWinnerNames: number,
+	},
+	Queue: {
+		requestCooldown: number,
+		respawnSeconds: number,
+	},
+	Menu: {
+		orbitRadius: number,
+		orbitHeight: number,
+		orbitSecondsPerTurn: number,
+		backdropTransparency: number,
+		backdropRgb: { number },
+		titleSize: { number },
+		titleY: number,
+		playSize: { number },
+		playY: number,
+		leaveSize: { number },
+		leavePosition: { number },
+		buttonRgb: { number },
+		leaveRgb: { number },
+		textRgb: { number },
+		maxTextSize: number,
+		cornerRadius: number,
 	},
 	Fairness: {
 		playersPerTargetTile: number,

@@ -6,7 +6,7 @@ local Types = require(game:GetService("ReplicatedStorage").Shared.Types)
 type MatchState = Types.MatchState
 
 export type FlowContext = {
-	playerCount: number, -- players connected to the server
+	playerCount: number, -- players queued to play (pressed Play), not everyone connected
 	survivorCount: number, -- participants still in the match
 	minPlayers: number, -- minimum players needed to start
 	sharedWin: boolean?, -- everyone remaining failed a replayed round and shares the win
