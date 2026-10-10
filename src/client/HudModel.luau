@@ -1,17 +1,20 @@
 --!strict
--- What the placeholder HUD shows, kept pure so it can be tested outside Studio.
+-- What the HUD shows, kept pure so it can be tested outside Studio.
 -- It only stores what the server sent; the client never decides any of it.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
+local Util = require(ReplicatedStorage.Shared.Util)
 
 type MatchState = Types.MatchState
+type ShapeId = Types.ShapeId
 
 export type Model = {
 	state: MatchState?,
 	endsAt: number?,
+	duration: number?, -- full length of the current state, for the timer bar
 	seq: number?, -- the current round's sequence number, from RoundInfo
 	round: number?,
 	revealSeconds: number?, -- set when the current round is reveal-then-hide
@@ -30,17 +33,32 @@ export type TargetView = {
 	hidden: boolean, -- true while the target is secret (before the reveal, or after it in Run)
 }
 
-export type Lines = {
-	state: string,
-	round: string,
-	target: string,
-	timer: string,
-	playersLeft: string,
+-- The target card. hidden: show the secret look (Config.Hud.hiddenText) instead of a color.
+export type TargetCard = {
+	hidden: boolean,
+	colorId: number?,
+	name: string,
+	shape: ShapeId?,
+	hex: string?,
+}
+
+export type TimerView = {
+	text: string,
+	fraction: number, -- 1 when the state starts, 0 when it ends
+	warning: boolean, -- the last Config.Hud.warningSeconds of Run
+}
+
+-- Everything the HUD draws. A nil piece is hidden, so nothing shows a placeholder like
+-- "Round: -" while the server's data is still on its way (#17).
+export type View = {
+	status: string,
+	roundText: string?,
+	playersLeft: string?,
+	target: TargetCard?,
+	timer: TimerView?,
 }
 
 local EMPTY = "-"
--- Shown in place of the target name while it is hidden (D-06 replaces it with art).
-local HIDDEN = "?"
 
 local STATE_TEXT: { [string]: string } = {
 	Lobby = "Waiting for players",
@@ -69,6 +87,7 @@ end
 function HudModel.applyState(model: Model, payload: Types.StateChangedPayload)
 	model.state = payload.state
 	model.endsAt = payload.endsAt
+	model.duration = payload.duration
 	-- MatchResult is only sent for Victory, so any other state clears it. It may arrive
 	-- just before or just after the Victory state; either way the names are kept.
 	if payload.state ~= "Victory" then
@@ -166,25 +185,69 @@ function HudModel.formatSeconds(remaining: number): string
 	return tostring(math.ceil(seconds))
 end
 
--- The HUD text for `model` at server time `now`.
-function HudModel.lines(model: Model, now: number): Lines
-	local state = model.state
-	local endsAt = model.endsAt
-	local round = model.round
-	local playersLeft = model.playersLeft
-	local winnerNames = model.winnerNames
-	local stateText = if state then STATE_TEXT[state] else EMPTY
-	if state == "Victory" and winnerNames then
-		stateText = HudModel.formatWinners(winnerNames)
+-- "Round 3", or "Round 3/8" when the match has a round cap.
+function HudModel.formatRound(round: number, maxRounds: number): string
+	if maxRounds == math.huge then
+		return "Round " .. tostring(round)
 	end
-	local target = HudModel.targetView(model, now)
-	local targetText = if target.hidden then HIDDEN else (target.name or EMPTY)
+	return string.format("Round %d/%d", round, maxRounds)
+end
+
+local function isTimerState(state: MatchState?): boolean
+	for _, timerState in Config.Hud.timerStates do
+		if timerState == state then
+			return true
+		end
+	end
+	return false
+end
+
+-- What the HUD shows for `model` at server time `now`.
+function HudModel.view(model: Model, now: number): View
+	local state: MatchState? = model.state
+	local round = model.round
+	local status = if state then STATE_TEXT[state] else EMPTY
+	if state == "Victory" and model.winnerNames then
+		status = HudModel.formatWinners(model.winnerNames)
+	end
+
+	local card: TargetCard? = nil
+	if round then
+		local target = HudModel.targetView(model, now)
+		if target.hidden then
+			card = { hidden = true, name = Config.Hud.hiddenText }
+		elseif target.colorId then
+			local colorDef = Util.getColorDef(Config.Colors, target.colorId)
+			card = {
+				hidden = false,
+				colorId = target.colorId,
+				name = target.name or (if colorDef then colorDef.name else EMPTY),
+				shape = if colorDef then colorDef.shape else nil,
+				hex = if colorDef then colorDef.hex else nil,
+			}
+		end
+	end
+
+	local timer: TimerView? = nil
+	local endsAt = model.endsAt
+	if endsAt and isTimerState(state) then
+		local remaining = math.max(0, endsAt - now)
+		local duration = model.duration
+		timer = {
+			text = HudModel.formatSeconds(remaining),
+			fraction = if duration and duration > 0
+				then math.clamp(remaining / duration, 0, 1)
+				else 1,
+			warning = state == "Run" and remaining <= Config.Hud.warningSeconds,
+		}
+	end
+
 	return {
-		state = stateText,
-		round = "Round: " .. (if round then tostring(round) else EMPTY),
-		target = "Target: " .. targetText,
-		timer = "Time: " .. (if endsAt then HudModel.formatSeconds(endsAt - now) else EMPTY),
-		playersLeft = "Players left: " .. (if playersLeft then tostring(playersLeft) else EMPTY),
+		status = status,
+		roundText = if round then HudModel.formatRound(round, Config.Match.maxRounds) else nil,
+		playersLeft = if model.playersLeft then tostring(model.playersLeft) else nil,
+		target = card,
+		timer = timer,
 	}
 end
 

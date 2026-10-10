@@ -27,10 +27,13 @@ We are now on the 3-day demo build. Demo tasks use branches named `demo/<task-id
 - D-03 Elimination decision log (#15 traced to the QA actor, which now walks)
 - D-04 Demo preset (`ACTIVE_PRESET` in Config) with a round cap of 8
 - D-16 Menu overlay and join queue (players start in the menu; only queued players count)
+- D-05 Reveal-then-hide
 
-In progress: D-05 Reveal-then-hide. Remaining, in order: D-06, D-03b, D-12, D-13, D-14, D-15, D-08 (day 2); D-07, D-09, D-11, then D-10 if time allows (day 3). No new features after midday on day 3. The README update is out of scope for the demo.
+In progress: D-06 HUD with real assets. Remaining, in order: D-03b, D-12, D-13, D-14, D-15, D-08 (day 2); D-07, D-09, D-11, then D-10 if time allows (day 3). No new features after midday on day 3. The README update is out of scope for the demo.
 
-Open issues: #15 (cause found, waiting to be closed), #16 (a playtest need, not a bug), #17 (the HUD's brief "Round: -" at match start, to be fixed in D-06).
+Open issues: #15 (cause found, waiting to be closed), #16 (a playtest need, not a bug), #17 (the HUD's brief "Round: -" at match start, fixed in D-06).
+
+Assets: all 33 demo assets are uploaded under the game owner's account. Their IDs are in "Color Panic Asset IDs.xlsx", kept outside git. Code reads them from `Config.Assets`, and each task adds the ones it uses. Use Image IDs, not Decal IDs.
 
 Tooling on `main`: a strict type check with luau-lsp (`scripts/typecheck.sh`) and pure-logic tests with Lune (`scripts/test.sh`). Run both, plus StyLua and Selene, before opening a pull request.
 

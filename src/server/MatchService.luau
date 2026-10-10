@@ -10,6 +10,7 @@ local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Util = require(ReplicatedStorage.Shared.Util)
 local ArenaService = require(script.Parent.ArenaService)
+local Broadcast = require(script.Parent.Broadcast)
 local EliminationRules = require(script.Parent.EliminationRules)
 local EliminationService = require(script.Parent.EliminationService)
 local MatchFlow = require(script.Parent.MatchFlow)
@@ -26,6 +27,7 @@ local MatchService = {}
 
 local state: MatchState = "Lobby"
 local endsAt: number? = nil
+local stateDuration: number? = nil -- full length of the current state, sent with endsAt
 local round = 0
 local inMatch = false
 -- Pressed Play and not Leave. Only queued players count toward a match and get a character.
@@ -335,6 +337,52 @@ local function sendMatchResult(player: Player?)
 	end
 end
 
+-- Sends the current state to one player, or to everyone when `player` is nil.
+local function sendState(player: Player?)
+	local payload = { state = state, endsAt = endsAt, duration = stateDuration }
+	if player then
+		Remotes.StateChanged.fireTo(player, payload)
+	else
+		Remotes.StateChanged.fireAll(payload)
+	end
+end
+
+-- Reveal-then-hide: once Run starts, shows everyone the target for revealSeconds, using the
+-- same server clock as endsAt so every client hides it at the same moment.
+local function sendReveal()
+	if not (roundParams and roundParams.revealSeconds and not targetPublic) then
+		return
+	end
+	targetPublic = true
+	revealUntil = workspace:GetServerTimeNow() + roundParams.revealSeconds
+	sendTarget(nil)
+	print(
+		string.format(
+			"[Round] %d target %s, revealed for %.1f s",
+			round,
+			getColorName(roundParams.targetColorId),
+			roundParams.revealSeconds
+		)
+	)
+end
+
+-- Sends `messages` in order (see Broadcast) to one player, or to everyone when `player` is nil.
+local function send(messages: { Broadcast.Message }, player: Player?)
+	for _, message in messages do
+		if message == "MatchResult" then
+			sendMatchResult(player)
+		elseif message == "RoundInfo" then
+			sendRoundInfo(player)
+		elseif message == "Target" then
+			sendTarget(player)
+		elseif message == "StateChanged" then
+			sendState(player)
+		elseif message == "Reveal" and player == nil then
+			sendReveal()
+		end
+	end
+end
+
 -- BaseParts in the workspace, not counting player characters (they come and go with players).
 local function countWorkspaceParts(): number
 	local characters: { Instance } = {}
@@ -400,6 +448,7 @@ local function transition(nextState: MatchState)
 
 	local duration = getDuration(nextState)
 	state = nextState
+	stateDuration = duration
 	endsAt = if duration then workspace:GetServerTimeNow() + duration else nil
 
 	print(
@@ -414,35 +463,8 @@ local function transition(nextState: MatchState)
 		)
 	)
 
-	-- Winners go out before the state, so the HUD can name them the moment Victory shows.
-	-- Separate remotes can arrive in either order; HudModel handles both.
-	if nextState == "Victory" then
-		sendMatchResult(nil)
-	end
-	Remotes.StateChanged.fireAll({ state = state, endsAt = endsAt })
-	if nextState == "RoundIntro" then
-		sendRoundInfo(nil)
-		sendTarget(nil) -- skipped in reveal-then-hide rounds until Run starts
-	elseif
-		nextState == "Run"
-		and roundParams
-		and roundParams.revealSeconds
-		and not targetPublic
-	then
-		-- Reveal-then-hide: show the target now, for revealSeconds, using the same server
-		-- clock as endsAt so every client hides it at the same moment.
-		targetPublic = true
-		revealUntil = workspace:GetServerTimeNow() + roundParams.revealSeconds
-		sendTarget(nil)
-		print(
-			string.format(
-				"[Round] %d target %s, revealed for %.1f s",
-				round,
-				getColorName(roundParams.targetColorId),
-				roundParams.revealSeconds
-			)
-		)
-	elseif nextState == "Lobby" and previous == "Reset" then
+	send(Broadcast.onTransition(nextState))
+	if nextState == "Lobby" and previous == "Reset" then
 		auditReset()
 	end
 end
@@ -583,10 +605,7 @@ local function onPlayerAdded(player: Player)
 		task.spawn(onCharacterAdded, player, character)
 	end
 	-- Bring the new player's HUD up to date, including the round in progress.
-	sendMatchResult(player)
-	Remotes.StateChanged.fireTo(player, { state = state, endsAt = endsAt })
-	sendRoundInfo(player)
-	sendTarget(player)
+	send(Broadcast.onJoin(), player)
 end
 
 local function onPlayerRemoving(player: Player)

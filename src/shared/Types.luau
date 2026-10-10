@@ -96,17 +96,46 @@ export type ConfigType = {
 		logDecisions: boolean,
 	},
 	Hud: {
-		width: number,
-		height: number,
-		topMargin: number,
+		margin: number,
+		gap: number,
+		roundBadgeSize: { number },
+		playersBadgeSize: { number },
+		targetCardSize: { number },
+		statusSize: { number },
+		statusY: number,
+		timerSize: { number },
+		timerBottom: number,
+		timerStates: { MatchState },
+		warningSeconds: number,
+		pulseHz: number,
+		pulseScale: number,
 		minTextSize: number,
 		maxTextSize: number,
 		padding: number,
-		backgroundTransparency: number,
-		backgroundRgb: { number },
+		cornerRadius: number,
+		strokeThickness: number,
+		headingFont: string,
+		bodyFont: string,
+		fallbackFont: string,
+		panelTransparency: number,
+		panelRgb: { number },
+		strokeRgb: { number },
 		textRgb: { number },
+		timerTrackRgb: { number },
+		timerFillRgb: { number },
+		warningRgb: { number },
+		hiddenText: string,
 		decimalBelowSeconds: number,
 		maxWinnerNames: number,
+	},
+	-- Roblox asset IDs. 0 means not uploaded yet: the UI shows a text fallback instead.
+	Assets: {
+		Images: {
+			shapeIcon: { [ShapeId]: number },
+			crown: number,
+			player: number,
+			stopwatch: number,
+		},
 	},
 	Queue: {
 		requestCooldown: number,
@@ -143,9 +172,12 @@ export type ConfigType = {
 -- Remote payloads, server to client. endsAt is a server timestamp from
 -- workspace:GetServerTimeNow(), so clients count down without deciding timing.
 
+-- duration is the state's full length in seconds (nil when it has no timer), so the HUD can
+-- draw how much of it is left even for a player who joins part way through.
 export type StateChangedPayload = {
 	state: MatchState,
 	endsAt: number?,
+	duration: number?,
 }
 
 -- seq goes up by one for every RoundIntro, replays included, so a client can tell which
