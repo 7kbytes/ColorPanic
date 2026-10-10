@@ -20,7 +20,8 @@ local arenaY = Config.Arena.origin[2]
 local FALL_OVERSHOOT = 10
 
 local function targetColorId(hud: Instance): number?
-	local name = string.match((hud :: any).Panel.target.Text, "Target: (%a+)")
+	local card = (hud :: any).TargetCard
+	local name = if card.Visible then card.Body.Text.Text else nil
 	for _, color in Config.Colors do
 		if color.name == name then
 			return color.id
@@ -73,7 +74,7 @@ task.spawn(function()
 		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 		local arena = workspace:FindFirstChild("Arena")
 		local tiles = arena and arena:FindFirstChild("Tiles")
-		local running = hud and (hud :: any).Panel.state.Text == "Run!"
+		local running = hud and (hud :: any).Status.Text == "Run!"
 		if mode and running and root and humanoid and tiles then
 			local position = root.Position
 			local onArena = math.abs(position.X) <= half + 2

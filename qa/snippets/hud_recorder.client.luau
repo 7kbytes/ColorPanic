@@ -3,17 +3,24 @@
 local player = game:GetService("Players").LocalPlayer
 _G.hudlog = {}
 _G.hudRecorderRunning = true
+-- A badge's text, or "(hidden)" while the badge is not shown.
+local function piece(hud: any, name: string): string
+	local panel = hud:FindFirstChild(name)
+	if not (panel and panel.Visible) then
+		return name .. " (hidden)"
+	end
+	return name .. " " .. panel.Body.Text.Text
+end
 task.spawn(function()
 	local last = ""
 	while _G.hudRecorderRunning do
 		local hud = player.PlayerGui:FindFirstChild("HUD")
 		if hud then
-			local panel = hud.Panel
 			local line = table.concat({
-				panel.state.Text,
-				panel.round.Text,
-				panel.target.Text,
-				panel.playersLeft.Text,
+				hud.Status.Text,
+				piece(hud, "RoundBadge"),
+				piece(hud, "TargetCard"),
+				piece(hud, "PlayersBadge"),
 			}, " | ")
 			if line ~= last then
 				last = line

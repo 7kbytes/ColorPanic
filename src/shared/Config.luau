@@ -130,21 +130,66 @@ local Config: Types.ConfigType = {
 		logDecisions = true,
 	},
 
-	-- Placeholder HUD (S1-09). Sizes are fractions of the screen so it scales to phones.
+	-- In-match HUD (D-06). Sizes are { width, height } fractions of the safe screen area, so it
+	-- scales from a 640x360 phone up. The round and players badges sit either side of the target
+	-- card, clear of Roblox's chat (top left) and player list (top right). The bottom corners
+	-- stay free for the thumbstick and jump button.
 	Hud = {
-		width = 0.4, -- fraction of screen width
-		height = 0.25, -- fraction of screen height
-		topMargin = 0.01, -- fraction of screen height above the panel
+		margin = 0.015, -- gap between the HUD and the top of the screen
+		gap = 0.01, -- gap between the target card and the badges beside it
+		roundBadgeSize = { 0.15, 0.11 }, -- left of the target card
+		playersBadgeSize = { 0.09, 0.11 }, -- right of the target card
+		targetCardSize = { 0.28, 0.17 }, -- top centre
+		statusSize = { 0.5, 0.07 }, -- centre, under the target card
+		statusY = 0.21, -- top of the status line
+		timerSize = { 0.42, 0.075 }, -- bottom centre
+		timerBottom = 0.03, -- gap under the timer bar
+		-- States that show the timer bar. The others show their countdown nowhere.
+		timerStates = { "Intermission", "Run" },
+		warningSeconds = 3, -- the last seconds of Run turn the timer red and pulse it
+		pulseHz = 2,
+		pulseScale = 0.08, -- the timer grows by up to this fraction while pulsing
 		minTextSize = 10,
-		maxTextSize = 28,
-		padding = 6, -- pixels inside the panel
-		backgroundTransparency = 0.4,
-		backgroundRgb = { 20, 20, 30 },
+		maxTextSize = 36,
+		padding = 6, -- pixels inside each panel
+		cornerRadius = 14, -- pixels
+		strokeThickness = 2, -- pixels of dark outline on HUD text
+		-- Enum.Font names. FredokaOne matches the bubbly logo; the fallback is used if a name
+		-- is not a font.
+		headingFont = "FredokaOne",
+		bodyFont = "BuilderSansBold",
+		fallbackFont = "BuilderSansBold",
+		panelTransparency = 0.15,
+		panelRgb = { 42, 31, 79 }, -- dark purple, like the logo outline
+		strokeRgb = { 27, 27, 58 }, -- same ink as the tile outlines
 		textRgb = { 255, 255, 255 },
+		timerTrackRgb = { 20, 16, 40 },
+		timerFillRgb = { 255, 255, 255 },
+		warningRgb = { 255, 72, 72 },
+		hiddenText = "?", -- target name and icon while the target is secret
 		-- Below this many seconds the timer shows tenths, above it whole seconds.
 		decimalBelowSeconds = 10,
 		-- A shared win names at most this many players, then "and N more", so the line fits.
 		maxWinnerNames = 3,
+	},
+
+	-- Roblox Image asset IDs (owner: the game's owner), from "Color Panic Asset IDs.xlsx".
+	-- Only the assets the code uses so far; later tasks add theirs. 0 shows a text fallback.
+	Assets = {
+		Images = {
+			-- White, tinted in game with the palette color (A-02).
+			shapeIcon = {
+				heart = 123130229675076,
+				triangle = 71048495577950,
+				star = 104194769717159,
+				circle = 127674839088791,
+				square = 83189910136901,
+				diamond = 101425829907806,
+			},
+			crown = 81195306124170, -- A-04, round badge
+			player = 139725380431484, -- A-05, players left
+			stopwatch = 112716861247418, -- A-06, timer bar
+		},
 	},
 
 	-- Join queue (D-16). Players start in the menu; only queued players count toward a match.
