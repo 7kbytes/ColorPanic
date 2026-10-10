@@ -38,6 +38,47 @@ for _, colorDef in Config.Colors do
 	end
 end
 
+-- Glossy tile treatment (D-07): the gloss texture on each side and a darker block underneath,
+-- so tiles read as chunky glossy blocks. Visual only: the base never collides or blocks rays.
+local TILE_LOOK = Config.Look.tile
+local SIDE_FACES =
+	{ Enum.NormalId.Front, Enum.NormalId.Back, Enum.NormalId.Left, Enum.NormalId.Right }
+local glossTexture = if Config.Assets.Images.tileGloss ~= 0
+	then "rbxassetid://" .. tostring(Config.Assets.Images.tileGloss)
+	else nil
+local baseShadeColor =
+	Color3.fromRGB(TILE_LOOK.baseShadeRgb[1], TILE_LOOK.baseShadeRgb[2], TILE_LOOK.baseShadeRgb[3])
+
+local function decorateTile(tile: Part, tileColor: Color3)
+	local tileSize = Config.Arena.tileSize
+	if glossTexture then
+		for _, face in SIDE_FACES do
+			local gloss = Instance.new("Texture")
+			gloss.Name = "Gloss"
+			gloss.Face = face
+			gloss.Texture = glossTexture
+			gloss.Transparency = TILE_LOOK.glossTransparency
+			gloss.StudsPerTileU = tileSize
+			gloss.StudsPerTileV = tileSize
+			gloss.Parent = tile
+		end
+	end
+
+	local base = Instance.new("Part")
+	base.Name = "Base"
+	base.Anchored = true
+	base.CanCollide = false
+	base.CanQuery = false
+	base.CanTouch = false
+	base.CastShadow = false
+	base.Material = Enum.Material.SmoothPlastic
+	base.Color = tileColor:Lerp(baseShadeColor, TILE_LOOK.baseShade)
+	base.Size = Vector3.new(tileSize, TILE_LOOK.baseDepth, tileSize)
+	base.Position = tile.Position
+		- Vector3.new(0, (Config.Arena.tileHeight + TILE_LOOK.baseDepth) / 2, 0)
+	base.Parent = tile -- destroyed with its tile
+end
+
 local function getFolder(parent: Instance, name: string): Instance
 	local existing = parent:FindFirstChild(name)
 	if existing then
@@ -97,6 +138,7 @@ function ArenaService.build(colorIds: { ColorId }, guarantee: ArenaLayout.Guaran
 			tile.Name = string.format("Tile_%d_%d", row, col)
 			tile.Anchored = true
 			tile.Material = Enum.Material.SmoothPlastic
+			tile.Reflectance = TILE_LOOK.reflectance
 			tile.Size = Vector3.new(tileSize, Config.Arena.tileHeight, tileSize)
 			tile.Position = Vector3.new(
 				origin[1] + (col - 1 - centerOffset) * tileSize,
@@ -114,6 +156,7 @@ function ArenaService.build(colorIds: { ColorId }, guarantee: ArenaLayout.Guaran
 				marker.Texture = texture
 				marker.Parent = tile
 			end
+			decorateTile(tile, tileColor)
 			tile.Parent = folder
 		end
 	end
