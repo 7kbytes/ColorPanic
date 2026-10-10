@@ -12,6 +12,7 @@ describe("LobbyModel.view", function()
 	it("counts down the players still needed", function()
 		local view = LobbyModel.view("Lobby", "Lobby", { queued = 1, needed = 2 }) :: any
 		expect(view.title).toBe("Lobby")
+		expect(view.placement).toBe("top")
 		expect(view.count).toBe("1 player ready")
 		expect(view.status).toBe("Waiting for 1 more")
 		expect((LobbyModel.view("Lobby", "Lobby", { queued = 1, needed = 4 }) :: any).status).toBe(
@@ -40,7 +41,8 @@ describe("LobbyModel.view", function()
 	it("tells a spectator they play next match, in any state", function()
 		for _, state in { "RoundIntro", "Run", "Victory", "Lobby" } do
 			local view = LobbyModel.view("Spectator", state, { queued = 3, needed = 2 }) :: any
-			expect(view.title).toBe("Next match")
+			expect(view.title).toBe("Spectator mode")
+			expect(view.placement).toBe("side")
 			expect(view.count).toBe(nil)
 		end
 	end)

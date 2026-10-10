@@ -195,7 +195,8 @@ local Config: Types.ConfigType = {
 	-- chat (top left), the centre banner and the thumbstick (bottom left). Leave sits under it.
 	Lobby = {
 		margin = 0.015, -- gap to the screen edge and between the panel and Leave
-		panelSize = { 0.22, 0.2 }, -- { width, height } fractions of the safe screen area
+		panelSize = { 0.22, 0.2 }, -- { width, height } fractions of the safe screen area (side)
+		topSize = { 0.34, 0.2 }, -- the panel at the top centre, for lobby players (D-09b)
 		centerY = 0.45,
 		leaveWidth = 0.16, -- fraction of the screen width; height follows the button art
 		leaveAspect = 512 / 192, -- width / height of the Leave button art
@@ -208,7 +209,8 @@ local Config: Types.ConfigType = {
 		cardSize = { 0.4, 0.52 }, -- { width, height } fractions of the safe screen area
 		barSize = { 0.5, 0.09 }, -- the "Watching" bar, bottom centre
 		barBottom = 0.13, -- gap under the bar, so it sits above the timer bar
-		buttonRgb = { 60, 190, 90 }, -- Spectate
+		buttonRgb = { 130, 70, 210 }, -- Spectate, purple as in the concept board
+		eliminatedRgb = { 232, 56, 61 }, -- the "Eliminated!" ribbon
 		quietButtonRgb = { 90, 84, 130 }, -- Close, Stop and the arrows
 		spectateButtonSize = { 0.16, 0.08 }, -- the Spectate button for mid-match joiners
 	},

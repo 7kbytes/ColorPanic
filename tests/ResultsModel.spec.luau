@@ -55,8 +55,8 @@ describe("ResultsModel.view", function()
 
 	it("names a single winner", function()
 		local view = ResultsModel.view(two, 2, 6)
-		expect(view.title).toBe("Alex wins!")
-		expect(view.subtitle).toBe("Match lasted 5 rounds")
+		expect(view.title).toBe("Winner!")
+		expect(view.subtitle).toBe("Alex · Match lasted 5 rounds")
 	end)
 
 	it("calls a shared win", function()
@@ -87,7 +87,7 @@ describe("ResultsModel.view", function()
 
 	it("says 1 round for a one-round match", function()
 		local short = result({ "A" }, { standing(1, "A", 1, 1) }, 1)
-		expect(ResultsModel.view(short, 1, 6).subtitle).toBe("Match lasted 1 round")
+		expect(ResultsModel.view(short, 1, 6).subtitle).toBe("A · Match lasted 1 round")
 	end)
 
 	it("lists at most maxRows and counts the rest", function()

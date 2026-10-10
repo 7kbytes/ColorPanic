@@ -56,10 +56,14 @@ end
 -- local player would be cut off, their row takes the last listed place, so everyone sees how
 -- they did.
 function ResultsModel.view(result: Types.MatchResultPayload, selfId: number, maxRows: number): View
+	-- "Winner!" with the name under it, as in the concept board.
 	local winnerCount = #result.winnerNames
 	local title: string
+	local lasted = "Match lasted " .. formatRounds(result.rounds)
+	local subtitle = lasted
 	if winnerCount == 1 then
-		title = result.winnerNames[1] .. " wins!"
+		title = "Winner!"
+		subtitle = result.winnerNames[1] .. " · " .. lasted
 	elseif winnerCount > 1 then
 		title = "Shared win!"
 	else
@@ -83,7 +87,7 @@ function ResultsModel.view(result: Types.MatchResultPayload, selfId: number, max
 
 	return {
 		title = title,
-		subtitle = "Match lasted " .. formatRounds(result.rounds),
+		subtitle = subtitle,
 		rows = rows,
 		more = #standings - shown,
 	}

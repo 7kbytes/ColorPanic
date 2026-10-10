@@ -69,7 +69,7 @@ function SpectateModel.card(round: number?): Card
 	local survived = if round then round - 1 else nil
 	local subtitle: string
 	if survived == nil then
-		subtitle = "Better luck next match"
+		subtitle = "Better luck next time!"
 	elseif survived <= 0 then
 		subtitle = "Out in round 1"
 	elseif survived == 1 then
@@ -77,7 +77,7 @@ function SpectateModel.card(round: number?): Card
 	else
 		subtitle = string.format("You survived %d rounds", survived)
 	end
-	return { title = "You're out!", subtitle = subtitle }
+	return { title = "Eliminated!", subtitle = subtitle }
 end
 
 return SpectateModel
