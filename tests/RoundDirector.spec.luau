@@ -118,3 +118,33 @@ describe("RoundDirector color choice", function()
 		end
 	)
 end)
+
+describe("RoundDirector reveal-then-hide", function()
+	it("has no reveal in rounds 1 to 3 of the SPEC table", function()
+		for round = 1, 3 do
+			local params = RoundDirector.getRoundParams(Config, round, 2, Harness.fakeRandom(round))
+			expect(params.revealSeconds).toBe(nil)
+		end
+	end)
+
+	it("passes the row's reveal through", function()
+		local fixture = table.clone(Config)
+		fixture.Difficulty = {
+			{ firstRound = 1, lastRound = 2, timerStart = 10, timerEnd = 10, colorCount = 3 },
+			{
+				firstRound = 3,
+				lastRound = nil,
+				timerStart = 9,
+				timerEnd = 9,
+				colorCount = 4,
+				revealSeconds = 2,
+			},
+		}
+		expect(RoundDirector.getRoundParams(fixture, 2, 2, Harness.fakeRandom(1)).revealSeconds).toBe(
+			nil
+		)
+		expect(RoundDirector.getRoundParams(fixture, 3, 2, Harness.fakeRandom(1)).revealSeconds).toBe(
+			2
+		)
+	end)
+end)

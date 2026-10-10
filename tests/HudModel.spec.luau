@@ -7,16 +7,16 @@ local Config = Harness.requireModule("ReplicatedStorage.Shared.Config")
 local NOW = 1000
 
 -- Payloads use the real palette from Config, as the server sends them.
-local function targetPayload(id: number)
-	return { colorId = id, name = Config.Colors[id].name }
+local function targetPayload(id: number, seq: number?)
+	return { seq = seq or 1, colorId = id, name = Config.Colors[id].name }
 end
 
 -- A model in the middle of round 3, Run state, 4 players left, target color 2.
 local function midRound()
 	local model = HudModel.new()
 	HudModel.applyState(model, { state = "RoundIntro", endsAt = NOW + 3 })
-	HudModel.applyRoundInfo(model, { round = 3, timerSeconds = 8, playersLeft = 4 })
-	HudModel.applyTarget(model, targetPayload(2))
+	HudModel.applyRoundInfo(model, { seq = 1, round = 3, timerSeconds = 8, playersLeft = 4 })
+	HudModel.applyTarget(model, targetPayload(2), NOW)
 	HudModel.applyState(model, { state = "Run", endsAt = NOW + 8 })
 	return model
 end
@@ -87,15 +87,15 @@ describe("HudModel updates", function()
 
 	it("a repeated RoundInfo after a player leaves updates players left", function()
 		local model = midRound()
-		HudModel.applyRoundInfo(model, { round = 3, timerSeconds = 8, playersLeft = 2 })
+		HudModel.applyRoundInfo(model, { seq = 1, round = 3, timerSeconds = 8, playersLeft = 2 })
 		expect(HudModel.lines(model, NOW).playersLeft).toBe("Players left: 2")
 	end)
 
 	it("a later round replaces the target", function()
 		local model = midRound()
 		HudModel.applyState(model, { state = "RoundIntro", endsAt = NOW + 3 })
-		HudModel.applyRoundInfo(model, { round = 4, timerSeconds = 7, playersLeft = 4 })
-		HudModel.applyTarget(model, targetPayload(5))
+		HudModel.applyRoundInfo(model, { seq = 2, round = 4, timerSeconds = 7, playersLeft = 4 })
+		HudModel.applyTarget(model, targetPayload(5, 2), NOW)
 		local lines = HudModel.lines(model, NOW)
 		expect(lines.round).toBe("Round: 4")
 		expect(lines.target).toBe("Target: " .. Config.Colors[5].name)
@@ -127,8 +127,8 @@ describe("HudModel updates", function()
 		-- MatchService sends StateChanged, then RoundInfo and TargetAnnounced, on join.
 		local model = HudModel.new()
 		HudModel.applyState(model, { state = "Run", endsAt = NOW + 5 })
-		HudModel.applyRoundInfo(model, { round = 2, timerSeconds = 9, playersLeft = 5 })
-		HudModel.applyTarget(model, targetPayload(1))
+		HudModel.applyRoundInfo(model, { seq = 1, round = 2, timerSeconds = 9, playersLeft = 5 })
+		HudModel.applyTarget(model, targetPayload(1), NOW)
 		local lines = HudModel.lines(model, NOW)
 		expect(lines.state).toBe("Run!")
 		expect(lines.round).toBe("Round: 2")
@@ -233,5 +233,113 @@ describe("HudModel winners", function()
 		local model = victory(names)
 		names[1] = "Changed"
 		expect(HudModel.lines(model, NOW).state).toBe("Winner: Alex")
+	end)
+end)
+
+describe("HudModel reveal-then-hide", function()
+	-- A reveal round: seq 4, round 5, 2 s reveal. RoundIntro, then Run from NOW.
+	local function revealRound()
+		local model = HudModel.new()
+		HudModel.applyState(model, { state = "RoundIntro", endsAt = NOW })
+		HudModel.applyRoundInfo(
+			model,
+			{ seq = 4, round = 5, timerSeconds = 10, playersLeft = 3, revealSeconds = 2 }
+		)
+		return model
+	end
+
+	local function startRun(model, colorId: number)
+		HudModel.applyState(model, { state = "Run", endsAt = NOW + 10 })
+		local payload = targetPayload(colorId, 4)
+		payload.revealUntil = NOW + 2
+		payload.revealSeconds = 2
+		HudModel.applyTarget(model, payload, NOW)
+	end
+
+	it("hides the target during RoundIntro, before the reveal", function()
+		local model = revealRound()
+		expect(HudModel.lines(model, NOW - 1).target).toBe("Target: ?")
+		expect(HudModel.targetView(model, NOW - 1).hidden).toBe(true)
+	end)
+
+	it("shows the target for the reveal window at the start of Run", function()
+		local model = revealRound()
+		startRun(model, 3)
+		expect(HudModel.lines(model, NOW).target).toBe("Target: " .. Config.Colors[3].name)
+		expect(HudModel.lines(model, NOW + 1.9).target).toBe("Target: " .. Config.Colors[3].name)
+		expect(HudModel.targetView(model, NOW + 1).colorId).toBe(3)
+	end)
+
+	it("hides the target from revealUntil until Run ends", function()
+		local model = revealRound()
+		startRun(model, 3)
+		expect(HudModel.lines(model, NOW + 2).target).toBe("Target: ?")
+		expect(HudModel.lines(model, NOW + 9).target).toBe("Target: ?")
+		expect(HudModel.targetView(model, NOW + 5).colorId).toBe(nil)
+	end)
+
+	it("shows the target again once the tiles drop", function()
+		local model = revealRound()
+		startRun(model, 3)
+		HudModel.applyState(model, { state = "Elimination", endsAt = NOW + 13 })
+		expect(HudModel.lines(model, NOW + 11).target).toBe("Target: " .. Config.Colors[3].name)
+	end)
+
+	it("a player who joins after the reveal sees it hidden", function()
+		-- Join snapshot: state, round info, then the target with a revealUntil in the past.
+		local model = HudModel.new()
+		HudModel.applyState(model, { state = "Run", endsAt = NOW + 6 })
+		HudModel.applyRoundInfo(
+			model,
+			{ seq = 4, round = 5, timerSeconds = 10, playersLeft = 3, revealSeconds = 2 }
+		)
+		local payload = targetPayload(3, 4)
+		payload.revealUntil = NOW - 2
+		payload.revealSeconds = 2
+		HudModel.applyTarget(model, payload, NOW)
+		expect(HudModel.lines(model, NOW).target).toBe("Target: ?")
+	end)
+
+	it("never shows the previous round's target in a new reveal round", function()
+		local model = midRound() -- seq 1, target color 2, visible
+		HudModel.applyState(model, { state = "RoundIntro", endsAt = NOW + 4 })
+		HudModel.applyRoundInfo(
+			model,
+			{ seq = 2, round = 4, timerSeconds = 9, playersLeft = 4, revealSeconds = 2 }
+		)
+		expect(HudModel.lines(model, NOW).target).toBe("Target: ?")
+	end)
+
+	it("ignores an old target that arrives after the new round's info", function()
+		local model = revealRound() -- seq 4
+		HudModel.applyTarget(model, targetPayload(1, 3), NOW) -- seq 3, a late duplicate
+		expect(HudModel.lines(model, NOW).target).toBe("Target: ?")
+	end)
+
+	it("in a normal round, a target that arrives before RoundInfo shows once it does", function()
+		local model = midRound() -- seq 1
+		HudModel.applyState(model, { state = "RoundIntro", endsAt = NOW + 4 })
+		HudModel.applyTarget(model, targetPayload(6, 2), NOW)
+		expect(HudModel.lines(model, NOW).target).toBe("Target: -")
+		HudModel.applyRoundInfo(model, { seq = 2, round = 4, timerSeconds = 9, playersLeft = 4 })
+		expect(HudModel.lines(model, NOW).target).toBe("Target: " .. Config.Colors[6].name)
+	end)
+end)
+
+describe("HudModel reveal arriving late", function()
+	it("shows the target for the full reveal from when it arrives", function()
+		local model = HudModel.new()
+		HudModel.applyState(model, { state = "Run", endsAt = NOW + 10 })
+		HudModel.applyRoundInfo(
+			model,
+			{ seq = 7, round = 3, timerSeconds = 10, playersLeft = 2, revealSeconds = 2 }
+		)
+		-- The server revealed at NOW (revealUntil NOW + 2); this client gets it 0.3 s later.
+		local payload = targetPayload(4, 7)
+		payload.revealUntil = NOW + 2
+		payload.revealSeconds = 2
+		HudModel.applyTarget(model, payload, NOW + 0.3)
+		expect(HudModel.lines(model, NOW + 2.1).target).toBe("Target: " .. Config.Colors[4].name)
+		expect(HudModel.lines(model, NOW + 2.3).target).toBe("Target: ?")
 	end)
 end)

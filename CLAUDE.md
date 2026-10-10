@@ -18,14 +18,20 @@ Read `SPEC.md` fully before doing anything. It holds the requirements, architect
 
 ## Current status
 
-Slice 1 tasks S1-01 to S1-08 are merged to `main`:
+Slice 1 (S1-01 to S1-11) is merged to `main`. The S1-11 QA record is in `qa/slice1-qa.md`.
 
-- S1-01 Repo and tooling, S1-02 Config and Types, S1-03 Remotes
-- S1-04 MatchService state machine, S1-05 ArenaService, S1-06 RoundDirector
-- S1-07 Spawning and placement, S1-08 EliminationService
+We are now on the 3-day demo build. Demo tasks use branches named `demo/<task-id>-<short-name>` (producer approved). Merged to `main`:
 
-Tooling on `main` also includes a strict type check with luau-lsp (`scripts/typecheck.sh`) and pure-logic tests with Lune (`scripts/test.sh`). Run both, plus StyLua and Selene, before opening a pull request.
+- D-01 Respawn and late-join placement (fixed #14), with a lobby SpawnLocation fallback and the `MatchRole` player attribute
+- D-02 Final palette in `shared/Config`, from `art/palette.json`
+- D-03 Elimination decision log (#15 traced to the QA actor, which now walks)
+- D-04 Demo preset (`ACTIVE_PRESET` in Config) with a round cap of 8
+- D-16 Menu overlay and join queue (players start in the menu; only queued players count)
 
-S1-04, S1-07 and S1-08 have not yet been checked against their multiplayer "done when" criteria in Studio.
+In progress: D-05 Reveal-then-hide. Remaining, in order: D-06, D-03b, D-12, D-13, D-14, D-15, D-08 (day 2); D-07, D-09, D-11, then D-10 if time allows (day 3). No new features after midday on day 3. The README update is out of scope for the demo.
 
-Next task: S1-09 Placeholder HUD. Propose your approach first. Remaining after that: S1-10, S1-11 and S1-12.
+Open issues: #15 (cause found, waiting to be closed), #16 (a playtest need, not a bug), #17 (the HUD's brief "Round: -" at match start, to be fixed in D-06).
+
+Tooling on `main`: a strict type check with luau-lsp (`scripts/typecheck.sh`) and pure-logic tests with Lune (`scripts/test.sh`). Run both, plus StyLua and Selene, before opening a pull request.
+
+QA in Studio: use Test, Clients and Servers with 2 clients, never 8 (the machine runs out of memory). Players now start in the menu, so press Play first (`qa/snippets/press_play.client.luau`). Test actors must walk (`qa/snippets/actor.client.luau`); client-side teleports do not always reach the server.

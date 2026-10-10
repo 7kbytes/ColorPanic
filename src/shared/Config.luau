@@ -27,9 +27,30 @@ local PRESETS: { [string]: { [string]: any } } = {
 		},
 		Difficulty = {
 			{ firstRound = 1, lastRound = 2, timerStart = 14, timerEnd = 14, colorCount = 3 },
-			{ firstRound = 3, lastRound = 4, timerStart = 12, timerEnd = 12, colorCount = 4 },
-			{ firstRound = 5, lastRound = 6, timerStart = 10, timerEnd = 10, colorCount = 5 },
-			{ firstRound = 7, lastRound = nil, timerStart = 9, timerEnd = 9, colorCount = 6 },
+			{
+				firstRound = 3,
+				lastRound = 4,
+				timerStart = 12,
+				timerEnd = 12,
+				colorCount = 4,
+				revealSeconds = 2,
+			},
+			{
+				firstRound = 5,
+				lastRound = 6,
+				timerStart = 10,
+				timerEnd = 10,
+				colorCount = 5,
+				revealSeconds = 2,
+			},
+			{
+				firstRound = 7,
+				lastRound = nil,
+				timerStart = 9,
+				timerEnd = 9,
+				colorCount = 6,
+				revealSeconds = 2,
+			},
 		} :: { Types.DifficultyRow },
 	},
 }
@@ -157,13 +178,43 @@ local Config: Types.ConfigType = {
 		playersPerTargetTile = 2,
 	},
 
+	-- Reveal-then-hide (D-05): rounds with revealSeconds show the target at the start of Run
+	-- for that long, then hide it until Run ends. Early rounds must reveal for at least
+	-- minSeconds (SPEC section 3); from round shorterFromRound the reveal may be shorter.
+	Reveal = {
+		minSeconds = 2,
+		shorterFromRound = 10,
+	},
+
 	-- Draft values from SPEC section 5. lastRound = nil means open-ended.
 	-- The timer moves linearly from timerStart to timerEnd across the row's rounds.
+	-- revealSeconds: reveal-then-hide from round 4, shorter from round 10 (SPEC section 5).
 	Difficulty = {
 		{ firstRound = 1, lastRound = 3, timerStart = 10, timerEnd = 8, colorCount = 3 },
-		{ firstRound = 4, lastRound = 6, timerStart = 7, timerEnd = 6, colorCount = 4 },
-		{ firstRound = 7, lastRound = 9, timerStart = 5, timerEnd = 5, colorCount = 5 },
-		{ firstRound = 10, lastRound = nil, timerStart = 4, timerEnd = 4, colorCount = 6 },
+		{
+			firstRound = 4,
+			lastRound = 6,
+			timerStart = 7,
+			timerEnd = 6,
+			colorCount = 4,
+			revealSeconds = 2,
+		},
+		{
+			firstRound = 7,
+			lastRound = 9,
+			timerStart = 5,
+			timerEnd = 5,
+			colorCount = 5,
+			revealSeconds = 2,
+		},
+		{
+			firstRound = 10,
+			lastRound = nil,
+			timerStart = 4,
+			timerEnd = 4,
+			colorCount = 6,
+			revealSeconds = 1.5,
+		},
 	},
 }
 
