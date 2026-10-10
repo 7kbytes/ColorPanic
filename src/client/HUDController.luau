@@ -17,6 +17,7 @@ local Types = require(ReplicatedStorage.Shared.Types)
 local Util = require(ReplicatedStorage.Shared.Util)
 local BannerModel = require(script.Parent.BannerModel)
 local HudModel = require(script.Parent.HudModel)
+local LobbyModel = require(script.Parent.LobbyModel)
 
 type ShapeId = Types.ShapeId
 
@@ -262,6 +263,10 @@ type Widgets = {
 	bannerScale: UIScale,
 	bannerTitle: TextLabel,
 	bannerSubtitle: TextLabel,
+	lobbyPanel: Frame,
+	lobbyTitle: TextLabel,
+	lobbyCount: TextLabel,
+	lobbyStatus: TextLabel,
 }
 
 local function buildGui(): Widgets
@@ -368,6 +373,28 @@ local function buildGui(): Widgets
 	bannerSubtitle.Size = UDim2.fromScale(1, 1 - BANNER.titleShare)
 	banner.Parent = screenGui
 
+	-- Lobby panel (D-13): title, players ready and status, stacked on the left.
+	local LOBBY = Config.Lobby
+	local lobbyPanel = makePanel(
+		"LobbyPanel",
+		LOBBY.panelSize,
+		Vector2.new(0, 0.5),
+		UDim2.fromScale(LOBBY.margin, LOBBY.centerY)
+	)
+	local lobbyLayout = Instance.new("UIListLayout")
+	lobbyLayout.FillDirection = Enum.FillDirection.Vertical
+	lobbyLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	lobbyLayout.Parent = lobbyPanel
+	local lobbyRows: { TextLabel } = {}
+	for index, rowName in { "Title", "Count", "Status" } do
+		local font = if index == 1 then HEADING_FONT else BODY_FONT
+		local row = makeText(rowName, lobbyPanel, font)
+		row.LayoutOrder = index
+		row.Size = UDim2.fromScale(1, 1 / 3)
+		lobbyRows[index] = row
+	end
+	lobbyPanel.Parent = screenGui
+
 	screenGui.Parent = playerGui
 	hudGui = screenGui
 	return {
@@ -388,6 +415,10 @@ local function buildGui(): Widgets
 		bannerScale = bannerScale,
 		bannerTitle = bannerTitle,
 		bannerSubtitle = bannerSubtitle,
+		lobbyPanel = lobbyPanel,
+		lobbyTitle = lobbyRows[1],
+		lobbyCount = lobbyRows[2],
+		lobbyStatus = lobbyRows[3],
 	}
 end
 
@@ -486,6 +517,17 @@ local function drawBanner(w: Widgets, banner: BannerModel.Banner?, endsAt: numbe
 	end
 end
 
+local function drawLobby(w: Widgets, lobby: LobbyModel.View?)
+	w.lobbyPanel.Visible = lobby ~= nil
+	if not lobby then
+		return
+	end
+	setText(w.lobbyTitle, lobby.title)
+	w.lobbyCount.Visible = lobby.count ~= nil
+	setText(w.lobbyCount, lobby.count or "")
+	setText(w.lobbyStatus, lobby.status)
+end
+
 -- Shows or hides the whole HUD (hidden while the menu is up).
 function HUDController.setVisible(visible: boolean)
 	if hudGui then
@@ -499,6 +541,8 @@ function HUDController.start()
 
 	local widgets = buildGui()
 	local model = HudModel.new()
+	local lobbyInfo: Types.LobbyInfoPayload? = nil
+	local localPlayer = Players.LocalPlayer
 
 	local function render()
 		local now = workspace:GetServerTimeNow()
@@ -506,7 +550,14 @@ function HUDController.start()
 		-- The banner says what the status line would, so the status line steps aside for it.
 		local banner = BannerModel.view(model, now)
 		drawBanner(widgets, banner, model.endsAt, now)
-		widgets.status.Visible = banner == nil
+		local role = localPlayer:GetAttribute("MatchRole")
+		local lobby =
+			LobbyModel.view(if type(role) == "string" then role else nil, model.state, lobbyInfo)
+		drawLobby(widgets, lobby)
+		-- In the lobby the panel says what the status line would; spectators keep the status
+		-- line, since it describes the match they are watching.
+		local lobbySaysIt = lobby ~= nil and model.state == "Lobby"
+		widgets.status.Visible = banner == nil and not lobbySaysIt
 		setText(widgets.status, view.status)
 
 		widgets.roundPanel.Visible = view.roundText ~= nil
@@ -533,6 +584,10 @@ function HUDController.start()
 	end)
 	Remotes.PlayerEliminated.connect(function(payload)
 		HudModel.applyEliminated(model, payload)
+		render()
+	end)
+	Remotes.LobbyInfo.connect(function(payload)
+		lobbyInfo = payload
 		render()
 	end)
 	Remotes.MatchResult.connect(function(payload)

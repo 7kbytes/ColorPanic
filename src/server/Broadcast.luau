@@ -10,7 +10,14 @@ type MatchState = Types.MatchState
 
 -- RoundInfo: round, timer and players left. Target: the target color, if it is public yet.
 -- Reveal: the reveal-then-hide target, sent once Run has started.
-export type Message = "MatchResult" | "RoundInfo" | "Target" | "StateChanged" | "Reveal"
+-- LobbyInfo: how many players are queued and how many a match needs.
+export type Message =
+	"LobbyInfo"
+	| "MatchResult"
+	| "RoundInfo"
+	| "Target"
+	| "StateChanged"
+	| "Reveal"
 
 local Broadcast = {}
 
@@ -29,7 +36,7 @@ end
 
 -- Messages to a player who just joined, bringing their HUD up to date, in order.
 function Broadcast.onJoin(): { Message }
-	return { "MatchResult", "RoundInfo", "Target", "StateChanged" }
+	return { "LobbyInfo", "MatchResult", "RoundInfo", "Target", "StateChanged" }
 end
 
 return Broadcast

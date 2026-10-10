@@ -339,6 +339,17 @@ local function sendMatchResult(player: Player?)
 	end
 end
 
+-- Sends the queue size and the match minimum to one player, or to everyone when `player` is
+-- nil (D-13 lobby panel). Sent whenever the queue changes.
+local function sendLobbyInfo(player: Player?)
+	local payload = { queued = countQueued(), needed = getMinPlayers() }
+	if player then
+		Remotes.LobbyInfo.fireTo(player, payload)
+	else
+		Remotes.LobbyInfo.fireAll(payload)
+	end
+end
+
 -- Sends the current state to one player, or to everyone when `player` is nil.
 local function sendState(player: Player?)
 	local payload = { state = state, endsAt = endsAt, duration = stateDuration }
@@ -371,7 +382,9 @@ end
 -- Sends `messages` in order (see Broadcast) to one player, or to everyone when `player` is nil.
 local function send(messages: { Broadcast.Message }, player: Player?)
 	for _, message in messages do
-		if message == "MatchResult" then
+		if message == "LobbyInfo" then
+			sendLobbyInfo(player)
+		elseif message == "MatchResult" then
 			sendMatchResult(player)
 		elseif message == "RoundInfo" then
 			sendRoundInfo(player)
@@ -573,6 +586,7 @@ local function onRequestPlay(player: Player)
 			countQueued()
 		)
 	)
+	sendLobbyInfo(nil)
 	spawnCharacter(player)
 end
 
@@ -594,6 +608,7 @@ local function onRequestLeave(player: Player)
 	syncRole(player)
 	removeCharacter(player)
 	print(string.format("[Queue] %s left the queue (queued %d)", player.Name, countQueued()))
+	sendLobbyInfo(nil)
 end
 
 local function onPlayerAdded(player: Player)
@@ -613,6 +628,7 @@ end
 local function onPlayerRemoving(player: Player)
 	-- Leaving removes the player from the survivor count without ending the round.
 	local wasSurvivor = survivors[player] == true
+	local wasQueued = queued[player] == true
 	queued[player] = nil
 	lastRequestAt[player] = nil
 	spawning[player] = nil
@@ -621,6 +637,9 @@ local function onPlayerRemoving(player: Player)
 	diedThisRound[player] = nil
 	if wasSurvivor then
 		sendRoundInfo(nil)
+	end
+	if wasQueued then
+		sendLobbyInfo(nil)
 	end
 end
 
