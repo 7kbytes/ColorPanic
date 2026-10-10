@@ -4,6 +4,7 @@ local describe, it, expect = Harness.describe, Harness.it, Harness.expect
 local BannerModel = Harness.requireModule("StarterPlayer.StarterPlayerScripts.Client.BannerModel")
 local HudModel = Harness.requireModule("StarterPlayer.StarterPlayerScripts.Client.HudModel")
 local Config = Harness.requireModule("ReplicatedStorage.Shared.Config")
+local Util = Harness.requireModule("ReplicatedStorage.Shared.Util")
 
 local NOW = 1000
 
@@ -97,6 +98,16 @@ describe("BannerModel round intro", function()
 		local model = HudModel.new()
 		HudModel.applyState(model, { state = "RoundIntro", endsAt = NOW + 4, duration = 4 })
 		expect(BannerModel.view(model, NOW)).toBe(nil)
+	end)
+end)
+
+describe("BannerModel names the target (D-09)", function()
+	it("asks players to find the target by color and shape", function()
+		local model = intro(3)
+		HudModel.applyTarget(model, { seq = 3, colorId = 1, name = Config.Colors[1].name }, NOW)
+		local expected =
+			string.format("Find the %s · 12 seconds", Util.displayName(Config.Colors[1]))
+		expect((BannerModel.view(model, NOW) :: any).subtitle).toBe(expected)
 	end)
 end)
 

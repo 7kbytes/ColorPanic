@@ -37,6 +37,12 @@ function Util.getTileImageId(
 	return if imageId and imageId ~= 0 then imageId else nil
 end
 
+-- "Red Heart": the color name and its shape, so the target is named by both cues (D-09).
+function Util.displayName(colorDef: Types.ColorDef): string
+	local shape = colorDef.shape
+	return colorDef.name .. " " .. string.upper(string.sub(shape, 1, 1)) .. string.sub(shape, 2)
+end
+
 function Util.getColorDef(colors: { Types.ColorDef }, id: Types.ColorId): Types.ColorDef?
 	for _, colorDef in colors do
 		if colorDef.id == id then
