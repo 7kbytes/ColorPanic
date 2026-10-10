@@ -85,8 +85,8 @@ describe("SpectateModel.pick and step", function()
 end)
 
 describe("SpectateModel.card", function()
-	it("says you're out", function()
-		expect(SpectateModel.card(3).title).toBe("You're out!")
+	it("says you are eliminated", function()
+		expect(SpectateModel.card(3).title).toBe("Eliminated!")
 	end)
 
 	it("counts the rounds survived before the one you fell in", function()
@@ -96,6 +96,6 @@ describe("SpectateModel.card", function()
 	end)
 
 	it("still has a subtitle without a round number", function()
-		expect(SpectateModel.card(nil).subtitle).toBe("Better luck next match")
+		expect(SpectateModel.card(nil).subtitle).toBe("Better luck next time!")
 	end)
 end)

@@ -249,8 +249,7 @@ local function buildGui(): Gui
 
 	makeHowToCard(panel)
 
-	-- Leave sits outside the panel: it shows in the lobby, when the menu is hidden, under the
-	-- lobby panel (D-13).
+	-- Leave sits outside the panel: it shows in the lobby, when the menu is hidden (D-13).
 	local lobby = Config.Lobby
 	local leave = makeArtButton(
 		"Leave",
@@ -259,8 +258,9 @@ local function buildGui(): Gui
 		menu.leaveRgb,
 		lobby.leaveAspect
 	)
-	leave.Position =
-		UDim2.fromScale(lobby.margin, lobby.centerY + lobby.panelSize[2] / 2 + lobby.margin)
+	-- Under the lobby panel at the top centre (D-09b).
+	leave.AnchorPoint = Vector2.new(0.5, 0)
+	leave.Position = UDim2.fromScale(0.5, Config.Hud.margin + lobby.topSize[2] + lobby.margin)
 	leave.Size = UDim2.fromScale(lobby.leaveWidth, 1)
 	leave.Parent = screenGui
 

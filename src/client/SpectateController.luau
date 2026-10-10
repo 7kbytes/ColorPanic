@@ -91,8 +91,13 @@ local function buildGui(): Gui
 	face.Size = UDim2.fromScale(1, 0.3)
 	local cardTitle =
 		UiStyle.makeText("Title", card, UiStyle.HEADING_FONT, Config.Banner.maxTitleSize)
-	cardTitle.Position = UDim2.fromScale(0, 0.31)
-	cardTitle.Size = UDim2.fromScale(1, 0.22)
+	-- A red ribbon behind the title, as in the concept board.
+	cardTitle.Position = UDim2.fromScale(0.06, 0.31)
+	cardTitle.Size = UDim2.fromScale(0.88, 0.22)
+	cardTitle.BackgroundColor3 = toColor3(SPECTATE.eliminatedRgb)
+	cardTitle.BackgroundTransparency = 0
+	UiStyle.addCorner(cardTitle)
+	UiStyle.addPanelStroke(cardTitle)
 	local cardSubtitle =
 		UiStyle.makeText("Subtitle", card, UiStyle.BODY_FONT, Config.Banner.maxSubtitleSize)
 	cardSubtitle.Position = UDim2.fromScale(0, 0.53)

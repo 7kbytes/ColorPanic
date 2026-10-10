@@ -352,6 +352,7 @@ local function buildGui(): Widgets
 	local resultsTitle = makeText("Title", header, HEADING_FONT, Config.Banner.maxTitleSize)
 	resultsTitle.LayoutOrder = 2
 	resultsTitle.Size = UDim2.fromScale(0.8, 1)
+	resultsTitle.TextColor3 = toColor3(RESULTS.winnerRgb) -- "Winner!" in gold, as in the concept
 	local resultsSubtitle = makeText("Subtitle", results, BODY_FONT)
 	resultsSubtitle.Position = UDim2.fromScale(0, RESULTS.headerShare)
 	resultsSubtitle.Size = UDim2.fromScale(1, RESULTS.subtitleShare)
@@ -519,6 +520,17 @@ local function drawLobby(w: Widgets, lobby: LobbyModel.View?)
 	w.lobbyPanel.Visible = lobby ~= nil
 	if not lobby then
 		return
+	end
+	-- Lobby players see it at the top centre, as in the concept board; spectators on the side.
+	local LOBBY = Config.Lobby
+	if lobby.placement == "top" then
+		w.lobbyPanel.AnchorPoint = Vector2.new(0.5, 0)
+		w.lobbyPanel.Position = UDim2.fromScale(0.5, HUD.margin)
+		w.lobbyPanel.Size = UDim2.fromScale(LOBBY.topSize[1], LOBBY.topSize[2])
+	else
+		w.lobbyPanel.AnchorPoint = Vector2.new(0, 0.5)
+		w.lobbyPanel.Position = UDim2.fromScale(LOBBY.margin, LOBBY.centerY)
+		w.lobbyPanel.Size = UDim2.fromScale(LOBBY.panelSize[1], LOBBY.panelSize[2])
 	end
 	setText(w.lobbyTitle, lobby.title)
 	w.lobbyCount.Visible = lobby.count ~= nil

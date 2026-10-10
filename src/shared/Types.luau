@@ -134,6 +134,7 @@ export type ConfigType = {
 	Lobby: {
 		margin: number,
 		panelSize: { number },
+		topSize: { number },
 		centerY: number,
 		leaveWidth: number,
 		leaveAspect: number,
@@ -146,6 +147,7 @@ export type ConfigType = {
 		barBottom: number,
 		buttonRgb: { number },
 		quietButtonRgb: { number },
+		eliminatedRgb: { number },
 		spectateButtonSize: { number },
 	},
 	Results: {
