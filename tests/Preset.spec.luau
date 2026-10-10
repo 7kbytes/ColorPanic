@@ -75,3 +75,32 @@ describe("Active preset", function()
 		end)
 	end
 end)
+
+describe("Reveal-then-hide in the active preset", function()
+	local reveal = Config.Reveal
+
+	it("every reveal fits inside its round's Run timer", function()
+		for round = 1, 20 do
+			local row = RoundDirector.getRow(Config.Difficulty, round)
+			if row.revealSeconds then
+				expect(row.revealSeconds < RoundDirector.getTimerSeconds(row, round)).toBe(true)
+			end
+		end
+	end)
+
+	it("reveals for at least the minimum before the shorter-reveal rounds", function()
+		for round = 1, reveal.shorterFromRound - 1 do
+			local row = RoundDirector.getRow(Config.Difficulty, round)
+			if row.revealSeconds then
+				expect(row.revealSeconds).toBeAtLeast(reveal.minSeconds)
+			end
+		end
+	end)
+
+	if Config.activePreset == "demo" then
+		it("demo: the hook starts at round 3", function()
+			expect(RoundDirector.getRow(Config.Difficulty, 2).revealSeconds).toBe(nil)
+			expect(RoundDirector.getRow(Config.Difficulty, 3).revealSeconds ~= nil).toBe(true)
+		end)
+	end
+end)

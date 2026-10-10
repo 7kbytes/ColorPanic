@@ -41,6 +41,12 @@ local isReplay = false -- the current round is a replay after everyone fell
 local replayPending = false -- the next RoundIntro replays the current round
 local sharedWin = false -- everyone remaining failed a replay and shares the win
 local matchResult: Types.MatchResultPayload? = nil -- set on entering Victory, cleared on Reset
+-- Goes up by one on every RoundIntro, replays included; sent with RoundInfo and the target.
+local roundSeq = 0
+-- Reveal-then-hide (D-05): whether clients may be told this round's target yet, and the
+-- server time the reveal ends (nil when the target stays visible).
+local targetPublic = false
+local revealUntil: number? = nil
 local baselinePartCount = 0 -- workspace parts before the first match, for the reset audit
 local rng = Random.new()
 -- How long to wait for a new character's Humanoid before giving up on tracking its death.
@@ -227,6 +233,10 @@ local function onEnter(previous: MatchState, nextState: MatchState)
 			params.timerSeconds += Config.Elimination.replayTimerBonus
 		end
 		roundParams = params
+		roundSeq += 1
+		-- In a reveal-then-hide round the target stays secret until Run starts.
+		targetPublic = params.revealSeconds == nil
+		revealUntil = nil
 		ArenaService.build(params.colorIds, {
 			colorId = params.targetColorId,
 			minCount = params.minTargetTiles,
@@ -280,9 +290,11 @@ local function sendRoundInfo(player: Player?)
 		return
 	end
 	local payload = {
+		seq = roundSeq,
 		round = round,
 		timerSeconds = roundParams.timerSeconds,
 		playersLeft = countSurvivors(),
+		revealSeconds = roundParams.revealSeconds,
 	}
 	if player then
 		Remotes.RoundInfo.fireTo(player, payload)
@@ -292,13 +304,17 @@ local function sendRoundInfo(player: Player?)
 end
 
 -- Sends the current target color to one player, or to everyone when `player` is nil.
+-- In a reveal-then-hide round nothing is sent before Run starts.
 local function sendTarget(player: Player?)
-	if not (inMatch and roundParams) then
+	if not (inMatch and roundParams and targetPublic) then
 		return
 	end
 	local payload = {
+		seq = roundSeq,
 		colorId = roundParams.targetColorId,
 		name = getColorName(roundParams.targetColorId),
+		revealUntil = revealUntil,
+		revealSeconds = roundParams.revealSeconds,
 	}
 	if player then
 		Remotes.TargetAnnounced.fireTo(player, payload)
@@ -406,7 +422,26 @@ local function transition(nextState: MatchState)
 	Remotes.StateChanged.fireAll({ state = state, endsAt = endsAt })
 	if nextState == "RoundIntro" then
 		sendRoundInfo(nil)
+		sendTarget(nil) -- skipped in reveal-then-hide rounds until Run starts
+	elseif
+		nextState == "Run"
+		and roundParams
+		and roundParams.revealSeconds
+		and not targetPublic
+	then
+		-- Reveal-then-hide: show the target now, for revealSeconds, using the same server
+		-- clock as endsAt so every client hides it at the same moment.
+		targetPublic = true
+		revealUntil = workspace:GetServerTimeNow() + roundParams.revealSeconds
 		sendTarget(nil)
+		print(
+			string.format(
+				"[Round] %d target %s, revealed for %.1f s",
+				round,
+				getColorName(roundParams.targetColorId),
+				roundParams.revealSeconds
+			)
+		)
 	elseif nextState == "Lobby" and previous == "Reset" then
 		auditReset()
 	end

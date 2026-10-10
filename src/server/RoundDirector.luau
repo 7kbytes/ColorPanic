@@ -72,6 +72,7 @@ function RoundDirector.getRoundParams(
 			survivors,
 			config.Fairness.playersPerTargetTile
 		),
+		revealSeconds = row.revealSeconds,
 	}
 end
 

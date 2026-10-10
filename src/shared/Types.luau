@@ -21,6 +21,9 @@ export type DifficultyRow = {
 	timerStart: number,
 	timerEnd: number,
 	colorCount: number,
+	-- Reveal-then-hide (D-05): the target shows for this many seconds at the start of Run,
+	-- then hides. nil means the target stays visible all round.
+	revealSeconds: number?,
 }
 
 export type MatchState =
@@ -44,6 +47,7 @@ export type RoundParams = {
 	targetColorId: ColorId,
 	colorIds: { ColorId },
 	minTargetTiles: number,
+	revealSeconds: number?, -- nil: target visible all round
 }
 
 export type ConfigType = {
@@ -129,6 +133,10 @@ export type ConfigType = {
 	Fairness: {
 		playersPerTargetTile: number,
 	},
+	Reveal: {
+		minSeconds: number,
+		shorterFromRound: number,
+	},
 	Difficulty: { DifficultyRow },
 }
 
@@ -140,15 +148,24 @@ export type StateChangedPayload = {
 	endsAt: number?,
 }
 
+-- seq goes up by one for every RoundIntro, replays included, so a client can tell which
+-- round a TargetAnnounced belongs to even if the two remotes arrive out of order.
 export type RoundInfoPayload = {
+	seq: number,
 	round: number,
 	timerSeconds: number,
 	playersLeft: number,
+	revealSeconds: number?, -- set in reveal-then-hide rounds
 }
 
+-- In reveal-then-hide rounds this is sent when Run starts, with revealUntil (a server time)
+-- after which the HUD hides the target until Run ends.
 export type TargetAnnouncedPayload = {
+	seq: number,
 	colorId: ColorId,
 	name: string,
+	revealUntil: number?,
+	revealSeconds: number?, -- so each client shows it at least this long after it arrives
 }
 
 export type PlayerEliminatedPayload = {
