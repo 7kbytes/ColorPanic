@@ -29,8 +29,9 @@ We are now on the 3-day demo build. Demo tasks use branches named `demo/<task-id
 - D-16 Menu overlay and join queue (players start in the menu; only queued players count)
 - D-05 Reveal-then-hide
 - D-06 HUD with real assets (fixed #17)
+- D-03b Shape markers on tiles and the HUD target card
 
-In progress: D-03b Shape markers on tiles. Remaining, in order: D-12, D-13, D-14, D-15, D-08 (day 2); D-07, D-09, D-11, then D-10 if time allows (day 3). No new features after midday on day 3. The README update is out of scope for the demo.
+In progress: D-12 Round intro and intermission banners. Remaining, in order: D-13, D-14, D-15, D-08 (day 2); D-07, D-09, D-11, then D-10 if time allows (day 3). No new features after midday on day 3. The README update is out of scope for the demo.
 
 Open issues: #15 (cause found, waiting to be closed), #16 (a playtest need, not a bug), #17 is closed (fixed in D-06).
 

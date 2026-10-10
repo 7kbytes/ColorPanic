@@ -17,6 +17,9 @@ export type Model = {
 	duration: number?, -- full length of the current state, for the timer bar
 	seq: number?, -- the current round's sequence number, from RoundInfo
 	round: number?,
+	timerSeconds: number?, -- this round's Run length, from RoundInfo
+	colorCount: number?,
+	isReplay: boolean?,
 	revealSeconds: number?, -- set when the current round is reveal-then-hide
 	targetSeq: number?, -- which round the target below belongs to
 	targetColorId: number?,
@@ -96,6 +99,9 @@ function HudModel.applyState(model: Model, payload: Types.StateChangedPayload)
 	if OUT_OF_MATCH[payload.state] then
 		model.seq = nil
 		model.round = nil
+		model.timerSeconds = nil
+		model.colorCount = nil
+		model.isReplay = nil
 		model.revealSeconds = nil
 		model.targetSeq = nil
 		model.targetColorId = nil
@@ -108,6 +114,9 @@ end
 function HudModel.applyRoundInfo(model: Model, payload: Types.RoundInfoPayload)
 	model.seq = payload.seq
 	model.round = payload.round
+	model.timerSeconds = payload.timerSeconds
+	model.colorCount = payload.colorCount
+	model.isReplay = payload.replay
 	model.revealSeconds = payload.revealSeconds
 	model.playersLeft = payload.playersLeft
 end

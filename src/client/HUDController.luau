@@ -9,11 +9,13 @@ local ContentProvider = game:GetService("ContentProvider")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Util = require(ReplicatedStorage.Shared.Util)
+local BannerModel = require(script.Parent.BannerModel)
 local HudModel = require(script.Parent.HudModel)
 
 type ShapeId = Types.ShapeId
@@ -85,7 +87,12 @@ local function makePanel(name: string, size: { number }, anchor: Vector2, positi
 end
 
 -- White text with a dark outline, scaled to fit its box.
-local function makeText(name: string, parent: Instance, font: Enum.Font): TextLabel
+local function makeText(
+	name: string,
+	parent: Instance,
+	font: Enum.Font,
+	maxTextSize: number?
+): TextLabel
 	local label = Instance.new("TextLabel")
 	label.Name = name
 	label.BackgroundTransparency = 1
@@ -98,7 +105,7 @@ local function makeText(name: string, parent: Instance, font: Enum.Font): TextLa
 
 	local sizeLimit = Instance.new("UITextSizeConstraint")
 	sizeLimit.MinTextSize = HUD.minTextSize
-	sizeLimit.MaxTextSize = HUD.maxTextSize
+	sizeLimit.MaxTextSize = maxTextSize or HUD.maxTextSize
 	sizeLimit.Parent = label
 
 	local stroke = Instance.new("UIStroke")
@@ -251,6 +258,10 @@ type Widgets = {
 	timerScale: UIScale,
 	timerFill: Frame,
 	timerText: TextLabel,
+	banner: Frame,
+	bannerScale: UIScale,
+	bannerTitle: TextLabel,
+	bannerSubtitle: TextLabel,
 }
 
 local function buildGui(): Widgets
@@ -335,6 +346,28 @@ local function buildGui(): Widgets
 	local timerScale = Instance.new("UIScale")
 	timerScale.Parent = timerPanel
 
+	-- Centre banner (D-12): a title over a subtitle.
+	local BANNER = Config.Banner
+	local banner = Instance.new("Frame")
+	banner.Name = "Banner"
+	banner.AnchorPoint = Vector2.new(0.5, 0.5)
+	banner.Position = UDim2.fromScale(0.5, BANNER.centerY)
+	banner.Size = UDim2.fromScale(BANNER.size[1], BANNER.size[2])
+	banner.BackgroundColor3 = toColor3(HUD.panelRgb)
+	banner.BackgroundTransparency = HUD.panelTransparency
+	banner.BorderSizePixel = 0
+	banner.Visible = false
+	addCorner(banner)
+	addPadding(banner)
+	local bannerScale = Instance.new("UIScale")
+	bannerScale.Parent = banner
+	local bannerTitle = makeText("Title", banner, HEADING_FONT, BANNER.maxTitleSize)
+	bannerTitle.Size = UDim2.fromScale(1, BANNER.titleShare)
+	local bannerSubtitle = makeText("Subtitle", banner, BODY_FONT, BANNER.maxSubtitleSize)
+	bannerSubtitle.Position = UDim2.fromScale(0, BANNER.titleShare)
+	bannerSubtitle.Size = UDim2.fromScale(1, 1 - BANNER.titleShare)
+	banner.Parent = screenGui
+
 	screenGui.Parent = playerGui
 	hudGui = screenGui
 	return {
@@ -351,6 +384,10 @@ local function buildGui(): Widgets
 		timerScale = timerScale,
 		timerFill = timerFill,
 		timerText = timerText,
+		banner = banner,
+		bannerScale = bannerScale,
+		bannerTitle = bannerTitle,
+		bannerSubtitle = bannerSubtitle,
 	}
 end
 
@@ -405,6 +442,50 @@ local function drawTimer(w: Widgets, timer: HudModel.TimerView?, now: number)
 	end
 end
 
+local BANNER_TITLE_RGB: { [BannerModel.Kind]: { number } } = {
+	Intermission = HUD.textRgb,
+	Round = HUD.textRgb,
+	Final = Config.Banner.finalRgb,
+	Replay = Config.Banner.replayRgb,
+}
+
+-- The banner last drawn, so a new one pops in once instead of every frame.
+local shownBannerKey: string? = nil
+
+local function drawBanner(w: Widgets, banner: BannerModel.Banner?, endsAt: number?, now: number)
+	w.banner.Visible = banner ~= nil
+	if not banner then
+		shownBannerKey = nil
+		return
+	end
+	setText(w.bannerTitle, banner.title)
+	setText(w.bannerSubtitle, banner.subtitle)
+	w.bannerTitle.TextColor3 = toColor3(BANNER_TITLE_RGB[banner.kind])
+
+	local key = banner.kind .. "|" .. banner.title
+	if key ~= shownBannerKey then
+		shownBannerKey = key
+		w.bannerScale.Scale = Config.Banner.popStartScale
+		local info =
+			TweenInfo.new(Config.Banner.popSeconds, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+		TweenService:Create(w.bannerScale, info, { Scale = 1 }):Play()
+	end
+
+	-- Fade out over the last fadeSeconds of the state: the panel, the text and its outline
+	-- together. (A CanvasGroup faded only the panel in Studio QA, so each part fades itself.)
+	local fadeSeconds = Config.Banner.fadeSeconds
+	local remaining = if endsAt then endsAt - now else math.huge
+	local fade = if fadeSeconds > 0 then 1 - math.clamp(remaining / fadeSeconds, 0, 1) else 0
+	w.banner.BackgroundTransparency = HUD.panelTransparency + (1 - HUD.panelTransparency) * fade
+	for _, label in { w.bannerTitle, w.bannerSubtitle } do
+		label.TextTransparency = fade
+		local stroke = label:FindFirstChildOfClass("UIStroke")
+		if stroke then
+			stroke.Transparency = fade
+		end
+	end
+end
+
 -- Shows or hides the whole HUD (hidden while the menu is up).
 function HUDController.setVisible(visible: boolean)
 	if hudGui then
@@ -422,6 +503,10 @@ function HUDController.start()
 	local function render()
 		local now = workspace:GetServerTimeNow()
 		local view = HudModel.view(model, now)
+		-- The banner says what the status line would, so the status line steps aside for it.
+		local banner = BannerModel.view(model, now)
+		drawBanner(widgets, banner, model.endsAt, now)
+		widgets.status.Visible = banner == nil
 		setText(widgets.status, view.status)
 
 		widgets.roundPanel.Visible = view.roundText ~= nil

@@ -129,6 +129,18 @@ export type ConfigType = {
 		decimalBelowSeconds: number,
 		maxWinnerNames: number,
 	},
+	Banner: {
+		size: { number },
+		centerY: number,
+		titleShare: number,
+		popSeconds: number,
+		popStartScale: number,
+		fadeSeconds: number,
+		maxTitleSize: number,
+		maxSubtitleSize: number,
+		finalRgb: { number },
+		replayRgb: { number },
+	},
 	-- Roblox asset IDs. 0 means not uploaded yet: the UI shows a text fallback instead.
 	Assets: {
 		Images: {
@@ -190,6 +202,8 @@ export type RoundInfoPayload = {
 	timerSeconds: number,
 	playersLeft: number,
 	revealSeconds: number?, -- set in reveal-then-hide rounds
+	colorCount: number, -- colors on the arena this round
+	replay: boolean, -- this round is a replay after everyone fell
 }
 
 -- In reveal-then-hide rounds this is sent when Run starts, with revealUntil (a server time)
