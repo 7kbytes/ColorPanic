@@ -56,6 +56,15 @@ local function addPadding(parent: GuiObject)
 	padding.Parent = parent
 end
 
+-- The white outline around a panel.
+local function addPanelStroke(panel: GuiObject)
+	local stroke = Instance.new("UIStroke")
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Color = toColor3(HUD.panelStrokeRgb)
+	stroke.Thickness = HUD.panelStrokeThickness
+	stroke.Parent = panel
+end
+
 local function makePanel(name: string, size: { number }, anchor: Vector2, position: UDim2): Frame
 	local panel = Instance.new("Frame")
 	panel.Name = name
@@ -68,6 +77,7 @@ local function makePanel(name: string, size: { number }, anchor: Vector2, positi
 	panel.Visible = false
 	addCorner(panel)
 	addPadding(panel)
+	addPanelStroke(panel)
 	return panel
 end
 
@@ -138,6 +148,7 @@ UiStyle.assetUrl = assetUrl
 UiStyle.addCorner = addCorner
 UiStyle.addPadding = addPadding
 UiStyle.makePanel = makePanel
+UiStyle.addPanelStroke = addPanelStroke
 UiStyle.makeText = makeText
 
 return UiStyle

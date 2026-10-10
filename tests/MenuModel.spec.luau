@@ -59,3 +59,25 @@ describe("MenuModel.orbitPosition", function()
 		end
 	end)
 end)
+
+describe("MenuModel how-to-play card (D-09)", function()
+	local Config = Harness.requireModule("ReplicatedStorage.Shared.Config")
+	local Util = Harness.requireModule("ReplicatedStorage.Shared.Util")
+
+	it("lists every palette color with its shape, in palette order", function()
+		local pairsList = MenuModel.pairs(Config.Colors)
+		expect(#pairsList).toBe(#Config.Colors)
+		for index, colorDef in Config.Colors do
+			local pair = pairsList[index]
+			expect(pair.colorId).toBe(colorDef.id)
+			expect(pair.shape).toBe(colorDef.shape)
+			expect(pair.label).toBe(colorDef.name)
+			expect(pair.name).toBe(Util.displayName(colorDef))
+		end
+	end)
+
+	it("has a tagline and three steps", function()
+		expect(#MenuModel.TAGLINE > 0).toBe(true)
+		expect(#MenuModel.STEPS).toBe(3)
+	end)
+end)

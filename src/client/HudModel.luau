@@ -233,7 +233,8 @@ function HudModel.view(model: Model, now: number): View
 			card = {
 				hidden = false,
 				colorId = target.colorId,
-				name = target.name or (if colorDef then colorDef.name else EMPTY),
+				-- Color and shape together ("Red Heart"), as in the concept board (D-09).
+				name = if colorDef then Util.displayName(colorDef) else (target.name or EMPTY),
 				shape = if colorDef then colorDef.shape else nil,
 				hex = if colorDef then colorDef.hex else nil,
 			}

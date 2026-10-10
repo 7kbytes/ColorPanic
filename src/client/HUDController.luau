@@ -294,6 +294,7 @@ local function buildGui(): Widgets
 	banner.Visible = false
 	addCorner(banner)
 	addPadding(banner)
+	UiStyle.addPanelStroke(banner)
 	local bannerScale = Instance.new("UIScale")
 	bannerScale.Parent = banner
 	local bannerTitle = makeText("Title", banner, HEADING_FONT, BANNER.maxTitleSize)
@@ -501,6 +502,10 @@ local function drawBanner(w: Widgets, banner: BannerModel.Banner?, endsAt: numbe
 	local remaining = if endsAt then endsAt - now else math.huge
 	local fade = if fadeSeconds > 0 then 1 - math.clamp(remaining / fadeSeconds, 0, 1) else 0
 	w.banner.BackgroundTransparency = HUD.panelTransparency + (1 - HUD.panelTransparency) * fade
+	local outline = w.banner:FindFirstChildOfClass("UIStroke")
+	if outline then
+		outline.Transparency = fade
+	end
 	for _, label in { w.bannerTitle, w.bannerSubtitle } do
 		label.TextTransparency = fade
 		local stroke = label:FindFirstChildOfClass("UIStroke")

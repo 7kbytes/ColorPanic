@@ -159,11 +159,14 @@ local Config: Types.ConfigType = {
 		headingFont = "FredokaOne",
 		bodyFont = "BuilderSansBold",
 		fallbackFont = "BuilderSansBold",
-		panelTransparency = 0.15,
-		panelRgb = { 42, 31, 79 }, -- dark purple, like the logo outline
+		-- Saturated blue panels with a white outline, as in the concept board (D-09).
+		panelTransparency = 0.05,
+		panelRgb = { 36, 92, 214 },
+		panelStrokeRgb = { 255, 255, 255 },
+		panelStrokeThickness = 3, -- pixels
 		strokeRgb = { 27, 27, 58 }, -- same ink as the tile outlines
 		textRgb = { 255, 255, 255 },
-		timerTrackRgb = { 20, 16, 40 },
+		timerTrackRgb = { 18, 40, 110 },
 		timerFillRgb = { 255, 255, 255 },
 		warningRgb = { 255, 72, 72 },
 		hiddenText = "?", -- target name and icon while the target is secret
@@ -219,7 +222,7 @@ local Config: Types.ConfigType = {
 		subtitleShare = 0.1,
 		placeShare = 0.18, -- fractions of a row's width
 		detailShare = 0.3,
-		selfRgb = { 90, 84, 130 }, -- background of the local player's row
+		selfRgb = { 86, 150, 245 }, -- background of the local player's row, lighter than the panel
 		winnerRgb = { 255, 214, 10 }, -- place text for winners
 	},
 
@@ -323,6 +326,8 @@ local Config: Types.ConfigType = {
 				diamond = 86763642426459,
 			},
 			leave = 131161271982260, -- A-09, red "Back" button art used for Leave
+			play = 76866923563733, -- A-09, green Play button art
+			logo = 107467392816535, -- A-03, title screen logo
 			sadFace = 114507417954529, -- A-07, eliminated card
 			eye = 92667144225263, -- A-08, spectate bar
 			crown = 81195306124170, -- A-04, round badge
@@ -344,12 +349,24 @@ local Config: Types.ConfigType = {
 		orbitRadius = 75, -- studs from the arena centre
 		orbitHeight = 40, -- studs above the arena
 		orbitSecondsPerTurn = 60,
-		backdropTransparency = 0.35,
+		-- Title screen (D-09), laid out like the concept board: logo top left, Play and two
+		-- "Coming soon" tiles under it, and a how-to-play card bottom right. The live arena
+		-- shows through a light backdrop.
+		backdropTransparency = 0.7,
 		backdropRgb = { 20, 20, 40 },
-		titleSize = { 0.8, 0.18 }, -- width, height
-		titleY = 0.22, -- vertical centre of the title
-		playSize = { 0.32, 0.16 },
-		playY = 0.62,
+		logoPosition = { 0.03, 0.03 }, -- top left corner
+		logoSize = { 0.36, 0.32 },
+		buttonsX = 0.04, -- left edge of the button column
+		playY = 0.38, -- top of the Play button
+		playWidth = 0.27, -- the height follows the art
+		playAspect = 512 / 192, -- width / height of the Play button art
+		soonSize = { 0.22, 0.1 }, -- the Settings and Shop tiles
+		soonGap = 0.025, -- vertical gap between the buttons
+		soonTransparency = 0.35, -- greyed: not wired yet
+		settingsRgb = { 40, 120, 230 },
+		shopRgb = { 130, 70, 210 },
+		howToSize = { 0.46, 0.58 },
+		howToCorner = { 0.97, 0.96 }, -- bottom right corner of the card
 		buttonRgb = { 60, 190, 90 },
 		leaveRgb = { 200, 70, 70 },
 		textRgb = { 255, 255, 255 },

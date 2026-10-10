@@ -35,8 +35,11 @@ We are now on the 3-day demo build. Demo tasks use branches named `demo/<task-id
 - D-14 Eliminated card and watch-only spectating
 - D-15 Match results panel
 - D-08 Audio (sound effects and music)
+- D-07 Arena look (lighting kept near defaults so tiles keep their palette hues)
 
-In progress: D-07 Arena look. Remaining, in order: D-09, D-11, then D-10 if time allows (day 3). No new features after midday on day 3. The README update is out of scope for the demo.
+In progress: D-09 Title screen in the concept board layout, "Red Heart" target naming, blue panels. Remaining, in order: D-09b (lobby counter top centre, spectator and eliminated styling, winner banner) only if time allows before the freeze, then D-11, then D-10 if time allows (day 3).
+
+Design reference: the concept board (not final art). Color and shape pairs follow art/palette.json, not the concept board (producer decision). No new features after midday on day 3. The README update is out of scope for the demo.
 
 Open issues: #15 (cause found, waiting to be closed), #16 (a playtest need, not a bug), #17 is closed (fixed in D-06).
 

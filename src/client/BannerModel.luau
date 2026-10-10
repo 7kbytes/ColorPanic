@@ -6,6 +6,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Util = require(ReplicatedStorage.Shared.Util)
 local HudModel = require(script.Parent.HudModel)
 
 -- Intermission: the match countdown. Round: a normal round intro. Final: the last round of a
@@ -26,12 +27,23 @@ local function formatSeconds(seconds: number): string
 end
 
 -- The intro subtitle: what this round asks of the player.
-local function roundSubtitle(model: HudModel.Model): string
+-- The target the intro asks for ("Find the Red Heart"), with the Run timer. Reveal rounds keep
+-- the target secret until Run, so they ask players to memorize it instead.
+local function roundSubtitle(model: HudModel.Model, now: number): string
 	if model.revealSeconds then
 		return "Memorize the color!"
 	end
-	local colors = model.colorCount
 	local timer = model.timerSeconds
+	local target = HudModel.targetView(model, now)
+	local colorDef = if target.colorId then Util.getColorDef(Config.Colors, target.colorId) else nil
+	if colorDef and timer then
+		return string.format(
+			"Find the %s · %s seconds",
+			Util.displayName(colorDef),
+			formatSeconds(timer)
+		)
+	end
+	local colors = model.colorCount
 	if colors and timer then
 		return string.format("%d colors · %s seconds", colors, formatSeconds(timer))
 	end
@@ -59,12 +71,12 @@ function BannerModel.view(model: HudModel.Model, now: number): Banner?
 		}
 	end
 	if round >= Config.Match.maxRounds then
-		return { kind = "Final", title = "Final round!", subtitle = roundSubtitle(model) }
+		return { kind = "Final", title = "Final round!", subtitle = roundSubtitle(model, now) }
 	end
 	return {
 		kind = "Round",
 		title = string.format("Round %d", round),
-		subtitle = roundSubtitle(model),
+		subtitle = roundSubtitle(model, now),
 	}
 end
 

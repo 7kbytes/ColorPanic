@@ -33,6 +33,17 @@ describe("Config.Assets", function()
 	end)
 end)
 
+describe("Util.displayName", function()
+	it("names every palette color with its shape, capitalized", function()
+		for _, colorDef in Config.Colors do
+			local name = Util.displayName(colorDef)
+			local shape = string.upper(string.sub(colorDef.shape, 1, 1))
+				.. string.sub(colorDef.shape, 2)
+			expect(name).toBe(colorDef.name .. " " .. shape)
+		end
+	end)
+end)
+
 describe("Util.getTileImageId", function()
 	it("finds each color's tile art through its shape", function()
 		for _, colorDef in Config.Colors do

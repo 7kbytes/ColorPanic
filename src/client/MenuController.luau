@@ -14,6 +14,7 @@ local Types = require(ReplicatedStorage.Shared.Types)
 local HUDController = require(script.Parent.HUDController)
 local MenuModel = require(script.Parent.MenuModel)
 local Sfx = require(script.Parent.Sfx)
+local UiStyle = require(script.Parent.UiStyle)
 
 local MATCH_ROLE_ATTRIBUTE = "MatchRole"
 -- Above the HUD.
@@ -43,75 +44,143 @@ local function addTextLimit(parent: GuiObject)
 	limit.Parent = parent
 end
 
-local function makeButton(name: string, text: string, rgb: { number }): TextButton
-	local button = Instance.new("TextButton")
+-- A button drawn with the artist's button art (Play, Leave). If the art is not uploaded (ID 0)
+-- or fails to load, a plain rounded button in `rgb` with `fallbackText` stands in. The height
+-- follows the art's `aspect` (width / height); callers set Position and the width.
+local function makeArtButton(
+	name: string,
+	id: number,
+	fallbackText: string,
+	rgb: { number },
+	aspect: number
+): ImageButton
+	local button = Instance.new("ImageButton")
 	button.Name = name
-	button.Text = text
-	button.TextScaled = true
-	button.Font = Enum.Font.BuilderSansBold
-	button.TextColor3 = toColor3(Config.Menu.textRgb)
+	button.BackgroundTransparency = 1
 	button.BackgroundColor3 = toColor3(rgb)
-	button.AutoButtonColor = true
-	addCorner(button)
-	addTextLimit(button)
-	return button
-end
-
--- Leave (D-13): the red "Back" button art under the lobby panel. If the art is not uploaded (ID
--- 0) or fails to load, a plain red button with the word Leave stands in.
-local function makeLeaveButton(): ImageButton
-	local lobby = Config.Lobby
-	local leave = Instance.new("ImageButton")
-	leave.Name = "Leave"
-	leave.BackgroundTransparency = 1
-	leave.BackgroundColor3 = toColor3(Config.Menu.leaveRgb)
-	leave.ScaleType = Enum.ScaleType.Fit
-	leave.Position =
-		UDim2.fromScale(lobby.margin, lobby.centerY + lobby.panelSize[2] / 2 + lobby.margin)
-	leave.Size = UDim2.fromScale(lobby.leaveWidth, 1)
-	local aspect = Instance.new("UIAspectRatioConstraint")
-	aspect.AspectRatio = lobby.leaveAspect
-	aspect.DominantAxis = Enum.DominantAxis.Width
-	aspect.Parent = leave
+	button.ScaleType = Enum.ScaleType.Fit
+	local ratio = Instance.new("UIAspectRatioConstraint")
+	ratio.AspectRatio = aspect
+	ratio.DominantAxis = Enum.DominantAxis.Width
+	ratio.Parent = button
 
 	local fallback = Instance.new("TextLabel")
 	fallback.Name = "Fallback"
-	fallback.Text = "Leave"
+	fallback.Text = fallbackText
 	fallback.TextScaled = true
-	fallback.Font = Enum.Font.BuilderSansBold
+	fallback.Font = UiStyle.HEADING_FONT
 	fallback.TextColor3 = toColor3(Config.Menu.textRgb)
 	fallback.BackgroundTransparency = 1
 	fallback.Size = UDim2.fromScale(1, 1)
 	fallback.Visible = false
 	addTextLimit(fallback)
-	fallback.Parent = leave
+	fallback.Parent = button
 
 	local function useFallback()
-		leave.Image = ""
-		leave.BackgroundTransparency = 0
-		addCorner(leave)
+		button.Image = ""
+		button.BackgroundTransparency = 0
+		addCorner(button)
 		fallback.Visible = true
 	end
-	local id = Config.Assets.Images.leave
 	if id == 0 then
 		useFallback()
 	else
-		leave.Image = "rbxassetid://" .. tostring(id)
+		button.Image = "rbxassetid://" .. tostring(id)
 		task.spawn(function()
-			ContentProvider:PreloadAsync({ leave }, function(_, status)
+			ContentProvider:PreloadAsync({ button }, function(_, status)
 				if status ~= Enum.AssetFetchStatus.Success then
 					warn(
-						string.format("[Menu] Leave art %d did not load (%s)", id, tostring(status))
+						string.format(
+							"[Menu] %s art %d did not load (%s)",
+							name,
+							id,
+							tostring(status)
+						)
 					)
 					useFallback()
 				end
 			end)
 		end)
 	end
-	return leave
+	return button
 end
 
-type Gui = { panel: Frame, play: TextButton, leave: ImageButton }
+-- A greyed tile for a feature that is not built yet (D-09): a label and "Coming soon". Not a
+-- button, so nothing can be pressed.
+local function makeSoonTile(name: string, rgb: { number }): Frame
+	local tile = Instance.new("Frame")
+	tile.Name = name
+	tile.BackgroundColor3 = toColor3(rgb)
+	tile.BackgroundTransparency = Config.Menu.soonTransparency
+	tile.BorderSizePixel = 0
+	UiStyle.addCorner(tile)
+	UiStyle.addPadding(tile)
+	UiStyle.addPanelStroke(tile)
+	local label = UiStyle.makeText("Label", tile, UiStyle.HEADING_FONT)
+	label.Size = UDim2.fromScale(0.6, 1)
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Text = name
+	local soon = UiStyle.makeText("Soon", tile, UiStyle.BODY_FONT)
+	soon.Position = UDim2.fromScale(0.6, 0.15)
+	soon.Size = UDim2.fromScale(0.4, 0.7)
+	soon.Text = "Coming soon"
+	return tile
+end
+
+-- How to play (D-09): the tagline, three steps, and every color with its shape, from Config.
+local function makeHowToCard(parent: Instance)
+	local menu = Config.Menu
+	local card = UiStyle.makePanel(
+		"HowToPlay",
+		menu.howToSize,
+		Vector2.new(1, 1),
+		UDim2.fromScale(menu.howToCorner[1], menu.howToCorner[2])
+	)
+	card.Visible = true
+	local tagline = UiStyle.makeText("Tagline", card, UiStyle.HEADING_FONT)
+	tagline.Size = UDim2.fromScale(1, 0.22)
+	tagline.Text = MenuModel.TAGLINE
+	for index, step in MenuModel.STEPS do
+		local line = UiStyle.makeText("Step" .. index, card, UiStyle.BODY_FONT)
+		line.Position = UDim2.fromScale(0, 0.22 + (index - 1) * 0.12)
+		line.Size = UDim2.fromScale(1, 0.12)
+		line.TextXAlignment = Enum.TextXAlignment.Left
+		line.Text = step
+	end
+
+	local row = Instance.new("Frame")
+	row.Name = "Pairs"
+	row.BackgroundTransparency = 1
+	row.Position = UDim2.fromScale(0, 0.6)
+	row.Size = UDim2.fromScale(1, 0.4)
+	row.Parent = card
+	local pairsList = MenuModel.pairs(Config.Colors)
+	local width = 1 / #pairsList
+	for index, pair in pairsList do
+		local slot = Instance.new("Frame")
+		slot.Name = pair.label
+		slot.BackgroundTransparency = 1
+		slot.Position = UDim2.fromScale((index - 1) * width, 0)
+		slot.Size = UDim2.fromScale(width, 1)
+		slot.Parent = row
+		local tile = Instance.new("ImageLabel")
+		tile.Name = "Tile"
+		tile.BackgroundTransparency = 1
+		tile.ScaleType = Enum.ScaleType.Fit
+		tile.Size = UDim2.fromScale(1, 0.72)
+		local id = Config.Assets.Images.shapeTile[pair.shape]
+		tile.Image = if id ~= 0 then UiStyle.assetUrl(id) else ""
+		tile.Parent = slot
+		local label = UiStyle.makeText("Label", slot, UiStyle.BODY_FONT)
+		-- A little narrower than the slot, so long names (Orange, Yellow) do not touch.
+		label.Position = UDim2.fromScale(0.06, 0.72)
+		label.Size = UDim2.fromScale(0.88, 0.28)
+		label.Text = pair.label
+	end
+	card.Parent = parent
+end
+
+type Gui = { panel: Frame, play: ImageButton, leave: ImageButton }
 
 local function buildGui(): Gui
 	local menu = Config.Menu
@@ -121,7 +190,7 @@ local function buildGui(): Gui
 	screenGui.DisplayOrder = MENU_DISPLAY_ORDER
 	screenGui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
 
-	-- The menu: a dimmed backdrop over the live match, a title and a big Play button.
+	-- The title screen over the live match, with the camera circling the arena.
 	local panel = Instance.new("Frame")
 	panel.Name = "Panel"
 	panel.Size = UDim2.fromScale(1, 1)
@@ -130,30 +199,73 @@ local function buildGui(): Gui
 	panel.BorderSizePixel = 0
 	panel.Parent = screenGui
 
-	local title = Instance.new("TextLabel")
-	title.Name = "Title"
+	-- Logo, with the game's name as text if the art is missing or fails to load.
+	local logo = Instance.new("ImageLabel")
+	logo.Name = "Logo"
+	logo.BackgroundTransparency = 1
+	logo.ScaleType = Enum.ScaleType.Fit
+	logo.Position = UDim2.fromScale(menu.logoPosition[1], menu.logoPosition[2])
+	logo.Size = UDim2.fromScale(menu.logoSize[1], menu.logoSize[2])
+	logo.Parent = panel
+	local title = UiStyle.makeText("Title", logo, UiStyle.HEADING_FONT)
 	title.Text = "Color Panic"
-	title.TextScaled = true
-	title.Font = Enum.Font.BuilderSansBold
-	title.TextColor3 = toColor3(menu.textRgb)
-	title.BackgroundTransparency = 1
-	title.AnchorPoint = Vector2.new(0.5, 0.5)
-	title.Position = UDim2.fromScale(0.5, menu.titleY)
-	title.Size = UDim2.fromScale(menu.titleSize[1], menu.titleSize[2])
-	addTextLimit(title)
-	title.Parent = panel
+	title.Visible = false
+	local logoId = Config.Assets.Images.logo
+	if logoId == 0 then
+		title.Visible = true
+	else
+		logo.Image = UiStyle.assetUrl(logoId)
+		task.spawn(function()
+			ContentProvider:PreloadAsync({ logo }, function(_, status)
+				if status ~= Enum.AssetFetchStatus.Success then
+					title.Visible = true
+				end
+			end)
+		end)
+	end
 
-	local play = makeButton("Play", "Play", menu.buttonRgb)
-	play.AnchorPoint = Vector2.new(0.5, 0.5)
-	play.Position = UDim2.fromScale(0.5, menu.playY)
-	play.Size = UDim2.fromScale(menu.playSize[1], menu.playSize[2])
+	-- Play, then the two tiles that are not built yet, in a column under the logo.
+	local play =
+		makeArtButton("Play", Config.Assets.Images.play, "Play", menu.buttonRgb, menu.playAspect)
+	play.Position = UDim2.fromScale(menu.buttonsX, menu.playY)
+	play.Size = UDim2.fromScale(menu.playWidth, 1)
 	play.Parent = panel
+	local settings = makeSoonTile("Settings", menu.settingsRgb)
+	local shop = makeSoonTile("Shop", menu.shopRgb)
+	for _, tile in { settings, shop } do
+		tile.Size = UDim2.fromScale(menu.soonSize[1], menu.soonSize[2])
+		tile.Parent = panel
+	end
+	-- The Play button's height follows its art, so the tiles are placed from its drawn size.
+	local function placeTiles()
+		local panelHeight = panel.AbsoluteSize.Y
+		local playHeight = if panelHeight > 0 then play.AbsoluteSize.Y / panelHeight else 0
+		local top = menu.playY + playHeight + menu.soonGap
+		settings.Position = UDim2.fromScale(menu.buttonsX, top)
+		shop.Position = UDim2.fromScale(menu.buttonsX, top + menu.soonSize[2] + menu.soonGap)
+	end
+	play:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeTiles)
+	panel:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeTiles)
 
-	-- Leave sits outside the panel: it shows in the lobby, when the menu is hidden.
-	local leave = makeLeaveButton()
+	makeHowToCard(panel)
+
+	-- Leave sits outside the panel: it shows in the lobby, when the menu is hidden, under the
+	-- lobby panel (D-13).
+	local lobby = Config.Lobby
+	local leave = makeArtButton(
+		"Leave",
+		Config.Assets.Images.leave,
+		"Leave",
+		menu.leaveRgb,
+		lobby.leaveAspect
+	)
+	leave.Position =
+		UDim2.fromScale(lobby.margin, lobby.centerY + lobby.panelSize[2] / 2 + lobby.margin)
+	leave.Size = UDim2.fromScale(lobby.leaveWidth, 1)
 	leave.Parent = screenGui
 
 	screenGui.Parent = player:WaitForChild("PlayerGui")
+	placeTiles()
 	return { panel = panel, play = play, leave = leave }
 end
 
