@@ -46,6 +46,7 @@ export type RoundParams = {
 }
 
 export type ConfigType = {
+	activePreset: string, -- "normal" or "demo"; see the presets in Config
 	Colors: { ColorDef },
 	Arena: {
 		gridSize: number,
@@ -58,6 +59,7 @@ export type ConfigType = {
 		studioMinPlayers: number,
 		studioSinglePlayerEnabled: boolean,
 		intermissionSeconds: number,
+		maxRounds: number,
 		pollSeconds: number,
 	},
 	StateSeconds: {

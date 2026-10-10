@@ -34,6 +34,37 @@ function Util.getColorDef(colors: { Types.ColorDef }, id: Types.ColorId): Types.
 	return nil
 end
 
+-- A non-empty array. An empty table counts as "no changes", not as an empty list.
+local function isList(value: { [any]: any }): boolean
+	return #value > 0
+end
+
+-- Writes `overrides` into `target` in place and returns `target`. Nested tables are merged
+-- field by field; lists (such as the difficulty table) are replaced whole. Every overridden
+-- key must already exist in `target` with the same type, so a typo in a preset fails loudly.
+function Util.applyOverrides(target: { [string]: any }, overrides: { [string]: any }, path: string?)
+	for key, value in overrides do
+		local where = if path then path .. "." .. key else key
+		local current = target[key]
+		assert(current ~= nil, string.format("Preset sets unknown Config key %s", where))
+		assert(
+			type(current) == type(value),
+			string.format(
+				"Preset sets %s to a %s, Config has a %s",
+				where,
+				type(value),
+				type(current)
+			)
+		)
+		if type(value) == "table" and not isList(value) then
+			Util.applyOverrides(current, value, where)
+		else
+			target[key] = value
+		end
+	end
+	return target
+end
+
 -- Returns the minimum players needed to start a match. The Studio test flag only
 -- lowers the minimum when running in Studio.
 function Util.getMinPlayers(

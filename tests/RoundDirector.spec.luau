@@ -1,7 +1,18 @@
 local Harness = require("./harness")
 local describe, it, expect = Harness.describe, Harness.it, Harness.expect
 
-local Config = Harness.requireModule("ReplicatedStorage.Shared.Config")
+local LiveConfig = Harness.requireModule("ReplicatedStorage.Shared.Config")
+
+-- These tests check RoundDirector against the SPEC section 5 curve, so they use that table
+-- directly instead of whichever preset is active (the demo preset has its own table).
+local SPEC_DIFFICULTY = {
+	{ firstRound = 1, lastRound = 3, timerStart = 10, timerEnd = 8, colorCount = 3 },
+	{ firstRound = 4, lastRound = 6, timerStart = 7, timerEnd = 6, colorCount = 4 },
+	{ firstRound = 7, lastRound = 9, timerStart = 5, timerEnd = 5, colorCount = 5 },
+	{ firstRound = 10, lastRound = nil, timerStart = 4, timerEnd = 4, colorCount = 6 },
+}
+local Config = table.clone(LiveConfig)
+Config.Difficulty = SPEC_DIFFICULTY
 local RoundDirector = Harness.requireModule("ServerScriptService.Server.RoundDirector")
 
 describe("RoundDirector.getRow", function()

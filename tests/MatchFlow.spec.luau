@@ -52,3 +52,38 @@ describe("MatchFlow.nextState shared win", function()
 		expect(MatchFlow.nextState("RoundEnd", context)).toBe("RoundIntro")
 	end)
 end)
+
+describe("MatchFlow.nextState round cap", function()
+	local function capCtx(survivors: number, round: number, maxRounds: number?)
+		return {
+			playerCount = 4,
+			survivorCount = survivors,
+			minPlayers = 2,
+			round = round,
+			maxRounds = maxRounds,
+		}
+	end
+
+	it("loops before the last round", function()
+		expect(MatchFlow.nextState("RoundEnd", capCtx(3, 7, 8))).toBe("RoundIntro")
+	end)
+
+	it("goes to Victory after the last round with several survivors (shared win)", function()
+		expect(MatchFlow.nextState("RoundEnd", capCtx(3, 8, 8))).toBe("Victory")
+	end)
+
+	it("goes to Victory after the last round even if a replay was pending", function()
+		-- Everyone fell in the last round: survivors are unchanged, the cap still ends it.
+		expect(MatchFlow.nextState("RoundEnd", capCtx(2, 8, 8))).toBe("Victory")
+	end)
+
+	it("never caps when maxRounds is math.huge or missing", function()
+		expect(MatchFlow.nextState("RoundEnd", capCtx(3, 50, math.huge))).toBe("RoundIntro")
+		expect(MatchFlow.nextState("RoundEnd", capCtx(3, 50, nil))).toBe("RoundIntro")
+	end)
+
+	it("does not affect other states", function()
+		expect(MatchFlow.nextState("Run", capCtx(3, 8, 8))).toBe("Elimination")
+		expect(MatchFlow.nextState("Elimination", capCtx(3, 8, 8))).toBe("RoundEnd")
+	end)
+end)

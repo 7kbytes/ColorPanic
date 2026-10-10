@@ -10,6 +10,8 @@ export type FlowContext = {
 	survivorCount: number, -- participants still in the match
 	minPlayers: number, -- minimum players needed to start
 	sharedWin: boolean?, -- everyone remaining failed a replayed round and shares the win
+	round: number?, -- the round that just ended
+	maxRounds: number?, -- last round of a match; after it, everyone still standing shares the win
 }
 
 local MatchFlow = {}
@@ -39,6 +41,12 @@ function MatchFlow.nextState(state: MatchState, ctx: FlowContext): MatchState
 
 	-- RoundEnd
 	if ctx.sharedWin then
+		return "Victory"
+	end
+	-- Round cap: after the last round everyone still standing shares the win. This also
+	-- applies when everyone fell in the last round, which then ends instead of replaying.
+	local round, maxRounds = ctx.round, ctx.maxRounds
+	if round and maxRounds and round >= maxRounds then
 		return "Victory"
 	end
 	return if ctx.survivorCount >= 2 then "RoundIntro" else "Victory"
