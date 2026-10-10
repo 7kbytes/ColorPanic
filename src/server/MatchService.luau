@@ -297,6 +297,8 @@ local function sendRoundInfo(player: Player?)
 		timerSeconds = roundParams.timerSeconds,
 		playersLeft = countSurvivors(),
 		revealSeconds = roundParams.revealSeconds,
+		colorCount = roundParams.colorCount,
+		replay = isReplay,
 	}
 	if player then
 		Remotes.RoundInfo.fireTo(player, payload)

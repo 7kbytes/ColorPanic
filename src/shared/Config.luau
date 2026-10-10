@@ -174,6 +174,20 @@ local Config: Types.ConfigType = {
 		maxWinnerNames = 3,
 	},
 
+	-- Centre banner (D-12) for Intermission and RoundIntro. Same panel style as the HUD.
+	Banner = {
+		size = { 0.46, 0.22 }, -- { width, height } fractions of the safe screen area
+		centerY = 0.45, -- vertical centre, clear of the target card above and timer below
+		titleShare = 0.6, -- fraction of the banner height for the title, the rest for the subtitle
+		popSeconds = 0.3, -- grow-in time when a new banner appears
+		popStartScale = 0.6,
+		fadeSeconds = 0.3, -- fade out over the last seconds of its state
+		maxTitleSize = 72,
+		maxSubtitleSize = 36,
+		finalRgb = { 255, 214, 10 }, -- title color for "Final round!"
+		replayRgb = { 255, 138, 31 }, -- title color for "Everyone fell!"
+	},
+
 	-- Roblox Image asset IDs (owner: the game's owner), from "Color Panic Asset IDs.xlsx".
 	-- Only the assets the code uses so far; later tasks add theirs. 0 shows a text fallback.
 	Assets = {
