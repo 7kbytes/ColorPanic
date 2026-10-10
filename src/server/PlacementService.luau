@@ -54,6 +54,7 @@ local function ensureArea(name: string, origin: { number }, rgb: { number })
 	platform.Anchored = true
 	platform.Material = Enum.Material.SmoothPlastic
 	platform.Color = Color3.fromRGB(rgb[1], rgb[2], rgb[3])
+	platform.Reflectance = Config.Look.platformReflectance
 	platform.Size = Vector3.new(
 		columns * placement.spawnSpacing + placement.platformMargin * 2,
 		placement.platformThickness,

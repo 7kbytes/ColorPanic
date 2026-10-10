@@ -223,6 +223,58 @@ local Config: Types.ConfigType = {
 		winnerRgb = { 255, 214, 10 }, -- place text for winners
 	},
 
+	-- Arena look (D-07). Visual only: nothing here changes gameplay, collisions or timing.
+	-- Draft values, tuned by eye in Studio.
+	Look = {
+		-- Applied on each client (Lighting.ClockTime does not replicate).
+		lighting = {
+			clockTime = 14, -- early afternoon
+			-- Kept near Roblox's defaults: brighter light and ambient washed Orange toward Yellow in
+			-- Studio QA. Tiles must keep their palette hues, so the look comes from haze, bloom,
+			-- gloss and props instead.
+			brightness = 1.5,
+			ambientRgb = { 80, 82, 92 },
+			outdoorAmbientRgb = { 128, 130, 140 },
+			environmentDiffuseScale = 0.4,
+			environmentSpecularScale = 0.3,
+			exposureCompensation = 0,
+		},
+		atmosphere = {
+			density = 0.25,
+			offset = 0.1,
+			haze = 1,
+			glare = 0.2,
+			colorRgb = { 199, 225, 255 },
+			decayRgb = { 120, 160, 220 },
+		},
+		bloom = { intensity = 0.35, size = 24, threshold = 1.6 }, -- subtle, for phones
+		-- Kept small: stronger saturation pushed Blue toward cyan in Studio QA.
+		colorCorrection = { saturation = 0.05, contrast = 0.05, brightness = 0 },
+		-- Tiles: a little shine, the gloss texture on the sides, and a darker base underneath.
+		tile = {
+			reflectance = 0.06,
+			glossTransparency = 0.7, -- the gloss texture on each side
+			baseDepth = 0.8, -- studs of darker block under each tile
+			baseShade = 0.45, -- how far the base color moves toward baseShadeRgb
+			baseShadeRgb = { 27, 27, 58 },
+		},
+		-- A ring of lollipop props around the arena (placeholder until the builder's arena).
+		props = {
+			count = 12,
+			radius = 50, -- studs from the arena centre
+			pillarSize = { 2, 16, 2 }, -- studs
+			ballDiameter = 6,
+			topBelowArena = 4, -- studs the ball top sits below the tiles, clear of the view
+		},
+		platformReflectance = 0.08, -- lobby and spectator platforms
+		-- Confetti burst on the screen at Victory, client only.
+		confetti = {
+			pieces = 36,
+			seconds = 3,
+			sizePixels = 56, -- the art is a small sparkle burst, so each piece needs room
+		},
+	},
+
 	-- Audio (D-08). Volumes are 0 to 1. Pitches are Sound.PlaybackSpeed multipliers.
 	Audio = {
 		sfxVolume = 0.8,
@@ -276,6 +328,8 @@ local Config: Types.ConfigType = {
 			crown = 81195306124170, -- A-04, round badge
 			player = 139725380431484, -- A-05, players left
 			stopwatch = 112716861247418, -- A-06, timer bar
+			tileGloss = 106294149443991, -- A-11, faint gloss on tile sides
+			confetti = 96276252812980, -- A-10, Victory confetti
 		},
 	},
 
