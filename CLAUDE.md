@@ -41,7 +41,9 @@ We are now on the 3-day demo build. Demo tasks use branches named `demo/<task-id
 
 - D-09b Concept polish (lobby panel top centre, spectator mode, eliminated ribbon, winner title)
 
-In progress: D-11 QA on a published private copy with 4 or more players. The checklist is `qa/demo-qa.md`; the producer runs it with real players, then reports Fail rows for fixing before the freeze. Then D-10 if time allows (day 3).
+- D-10 Shrinking tiles from round 4 in the demo preset (Config.Shrink; merged before D-11 on the producer's call)
+
+In progress: D-11 QA on a published private copy with 4 or more players. The checklist is `qa/demo-qa.md`; the producer runs it with real players, then reports Fail rows for fixing before the freeze. Watch whether 60% tiles by round 8 are too hard (Config.Shrink).
 
 Design reference: the concept board (not final art). Color and shape pairs follow art/palette.json, not the concept board (producer decision). No new features after midday on day 3. The README update is out of scope for the demo.
 
