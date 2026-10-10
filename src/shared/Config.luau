@@ -20,6 +20,9 @@ local PRESETS: { [string]: { [string]: any } } = {
 			intermissionSeconds = 5,
 			maxRounds = 8,
 		},
+		Shrink = {
+			fromRound = 4, -- 92%, 84%, 76%, 68%, 60% for rounds 4 to 8
+		},
 		StateSeconds = {
 			RoundIntro = 4, -- room for the round intro banner (D-12)
 			RoundEnd = 3,
@@ -374,6 +377,15 @@ local Config: Types.ConfigType = {
 		textRgb = { 255, 255, 255 },
 		maxTextSize = 64,
 		cornerRadius = 12, -- pixels
+	},
+
+	-- Shrinking tiles (D-10): from round fromRound, tiles are built smaller each round, leaving
+	-- gaps between them. Tile centres stay on the grid, so placement and fairness are unchanged,
+	-- and elimination measures each tile's real size. Off in normal play (math.huge).
+	Shrink = {
+		fromRound = math.huge,
+		step = 0.08, -- fraction of full size lost each round
+		minScale = 0.6, -- never smaller than this fraction of full size
 	},
 
 	-- At least one target tile per this many surviving players, rounded up (SPEC section 3).

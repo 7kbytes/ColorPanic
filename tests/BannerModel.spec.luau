@@ -111,6 +111,26 @@ describe("BannerModel names the target (D-09)", function()
 	end)
 end)
 
+describe("BannerModel shrinking tiles (D-10)", function()
+	it("warns on the first shrinking round only", function()
+		local from = Config.Shrink.fromRound
+		if from == math.huge then
+			return -- shrinking is off in this preset
+		end
+		local function subtitle(round: number): string
+			local model = intro(round)
+			HudModel.applyTarget(
+				model,
+				{ seq = round, colorId = 1, name = Config.Colors[1].name },
+				NOW
+			)
+			return (BannerModel.view(model, NOW) :: any).subtitle
+		end
+		expect(string.find(subtitle(from), "Tiles are shrinking!", 1, true) ~= nil).toBe(true)
+		expect(string.find(subtitle(from + 1), "Tiles are shrinking!", 1, true)).toBe(nil)
+	end)
+end)
+
 describe("BannerModel other states", function()
 	it("shows no banner outside Intermission and RoundIntro", function()
 		for _, state in { "Lobby", "Run", "Elimination", "RoundEnd", "Victory", "Reset" } do

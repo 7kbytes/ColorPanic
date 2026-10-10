@@ -48,6 +48,7 @@ export type RoundParams = {
 	colorIds: { ColorId },
 	minTargetTiles: number,
 	revealSeconds: number?, -- nil: target visible all round
+	tileScale: number, -- tile width as a fraction of the grid cell (D-10); 1 is full size
 }
 
 export type ConfigType = {
@@ -276,6 +277,11 @@ export type ConfigType = {
 		textRgb: { number },
 		maxTextSize: number,
 		cornerRadius: number,
+	},
+	Shrink: {
+		fromRound: number,
+		step: number,
+		minScale: number,
 	},
 	Fairness: {
 		playersPerTargetTile: number,

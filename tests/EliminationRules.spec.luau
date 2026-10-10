@@ -160,3 +160,20 @@ describe("EliminationRules.formatDecision", function()
 		)
 	end)
 end)
+
+describe("EliminationRules on shrunken tiles (D-10)", function()
+	-- A 10 stud grid cell at 60%: the tile is 6 studs wide, so the gap to the next cell's tile
+	-- is 4 studs. Edge tolerance still applies to the tile's real edge.
+	local rules = { fallMargin = 5, edgeTolerance = 1 }
+	local SMALL = { x = 0, z = 0, halfX = 3, halfZ = 3, topY = 40.5 }
+
+	it("is safe near the edge of a shrunken tile", function()
+		expect(EliminationRules.decide(3.5, 43, 0, { SMALL }, rules).safe).toBe(true)
+	end)
+
+	it("is out in the gap between shrunken tiles", function()
+		local decision = EliminationRules.decide(4.5, 43, 0, { SMALL }, rules)
+		expect(decision.safe).toBe(false)
+		expect(decision.reason).toBe("not on a tile")
+	end)
+end)

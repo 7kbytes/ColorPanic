@@ -250,7 +250,16 @@ local function onEnter(previous: MatchState, nextState: MatchState)
 		ArenaService.build(params.colorIds, {
 			colorId = params.targetColorId,
 			minCount = params.minTargetTiles,
-		})
+		}, params.tileScale)
+		if params.tileScale < 1 then
+			print(
+				string.format(
+					"[Round] %d tiles at %d%% size",
+					round,
+					math.round(params.tileScale * 100)
+				)
+			)
+		end
 		-- Put players on the arena at match start, and again on a replay since everyone fell.
 		if previous == "Intermission" or replaying then
 			PlacementService.toArena(getSurvivorList())
