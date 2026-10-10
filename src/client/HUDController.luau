@@ -22,6 +22,8 @@ local function toColor3(rgb: { number }): Color3
 	return Color3.fromRGB(rgb[1], rgb[2], rgb[3])
 end
 
+local hudGui: ScreenGui? = nil
+
 local function buildGui(): { [string]: TextLabel }
 	local hud = Config.Hud
 	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -78,7 +80,15 @@ local function buildGui(): { [string]: TextLabel }
 	end
 
 	screenGui.Parent = playerGui
+	hudGui = screenGui
 	return labels
+end
+
+-- Shows or hides the whole HUD (hidden while the menu is up).
+function HUDController.setVisible(visible: boolean)
+	if hudGui then
+		hudGui.Enabled = visible
+	end
 end
 
 function HUDController.start()

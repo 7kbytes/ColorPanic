@@ -7,6 +7,7 @@ session is running.
 
 | Snippet | Run in | What it does |
 | --- | --- | --- |
+| `press_play.client.luau` | each client | Sends Play (or Leave, with `LEAVE = true`), like the menu buttons. Since D-16, players start in the menu and only count toward a match after pressing Play, so run this first. |
 | `hud_recorder.client.luau` | each client | Logs every HUD change with server time into `_G.hudlog`. Read it back with `hud_dump.client.luau`. |
 | `hud_dump.client.luau` | each client | Returns the recorded HUD lines, optionally only the last N. |
 | `actor.client.luau` | each client | Makes this player walk on its own during Run, set by `_G.qaMode`: `"target"` walks to a target tile, `"wrong"` to a non-target tile, `"fall"` off the nearest arena edge, `nil` does nothing. It walks with `Humanoid:MoveTo` like a real player; see the note below. |

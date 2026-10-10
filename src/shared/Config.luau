@@ -126,6 +126,32 @@ local Config: Types.ConfigType = {
 		maxWinnerNames = 3,
 	},
 
+	-- Join queue (D-16). Players start in the menu; only queued players count toward a match.
+	Queue = {
+		requestCooldown = 1, -- seconds between Play or Leave requests from one player
+		respawnSeconds = 5, -- delay before a queued player who died gets a new character
+	},
+
+	-- Menu overlay (D-16). Sizes are fractions of the screen; the camera orbits the arena.
+	Menu = {
+		orbitRadius = 75, -- studs from the arena centre
+		orbitHeight = 40, -- studs above the arena
+		orbitSecondsPerTurn = 60,
+		backdropTransparency = 0.35,
+		backdropRgb = { 20, 20, 40 },
+		titleSize = { 0.8, 0.18 }, -- width, height
+		titleY = 0.22, -- vertical centre of the title
+		playSize = { 0.32, 0.16 },
+		playY = 0.62,
+		leaveSize = { 0.16, 0.08 },
+		leavePosition = { 0.02, 0.2 }, -- top left corner, clear of the touch controls
+		buttonRgb = { 60, 190, 90 },
+		leaveRgb = { 200, 70, 70 },
+		textRgb = { 255, 255, 255 },
+		maxTextSize = 64,
+		cornerRadius = 12, -- pixels
+	},
+
 	-- At least one target tile per this many surviving players, rounded up (SPEC section 3).
 	Fairness = {
 		playersPerTargetTile = 2,

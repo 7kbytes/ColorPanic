@@ -16,6 +16,8 @@ local NAMES = {
 	"TargetAnnounced",
 	"PlayerEliminated",
 	"MatchResult",
+	"RequestPlay",
+	"RequestLeave",
 }
 
 -- A server to client channel. fireAll and fireTo run on the server only,
@@ -53,7 +55,34 @@ local function serverToClient<T>(name: string): ServerToClient<T>
 	}
 end
 
+-- A client to server request with no payload. fire runs on the client only, connect on the
+-- server only. The server gets only the sending player: anything else a client puts in the
+-- request is dropped, and the server validates every request before acting on it.
+export type ClientRequest = {
+	fire: () -> (),
+	connect: (callback: (player: Player) -> ()) -> RBXScriptConnection,
+}
+
+local function clientRequest(name: string): ClientRequest
+	return {
+		fire = function()
+			assert(RunService:IsClient(), "fire is client only")
+			getEvent(name):FireServer()
+		end,
+		connect = function(callback: (player: Player) -> ()): RBXScriptConnection
+			assert(RunService:IsServer(), "connect is server only")
+			return getEvent(name).OnServerEvent:Connect(function(player: Player)
+				callback(player)
+			end)
+		end,
+	}
+end
+
 local Remotes = {}
+
+-- Client requests (D-16 join queue).
+Remotes.RequestPlay = clientRequest("RequestPlay")
+Remotes.RequestLeave = clientRequest("RequestLeave")
 
 Remotes.StateChanged = serverToClient("StateChanged") :: ServerToClient<Types.StateChangedPayload>
 Remotes.RoundInfo = serverToClient("RoundInfo") :: ServerToClient<Types.RoundInfoPayload>
