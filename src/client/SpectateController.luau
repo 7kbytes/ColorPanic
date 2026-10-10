@@ -236,6 +236,9 @@ function SpectateController.start()
 
 	Remotes.StateChanged.connect(function(payload)
 		state = payload.state
+		if payload.state == "Victory" then
+			cardOpen = false -- the results panel tells them how they did
+		end
 		if MATCH_OVER[payload.state] then
 			cardOpen = false
 			if watching then

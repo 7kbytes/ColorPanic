@@ -146,6 +146,17 @@ export type ConfigType = {
 		quietButtonRgb: { number },
 		spectateButtonSize: { number },
 	},
+	Results: {
+		size: { number },
+		centerY: number,
+		maxRows: number,
+		headerShare: number,
+		subtitleShare: number,
+		placeShare: number,
+		detailShare: number,
+		selfRgb: { number },
+		winnerRgb: { number },
+	},
 	Banner: {
 		size: { number },
 		centerY: number,
@@ -247,9 +258,22 @@ export type PlayerEliminatedPayload = {
 
 -- Winners in the same order in both lists. Names are display names, sent by the server so
 -- the announcement still works if a winner leaves before a client reads it.
+-- One player's result for the match that just ended (D-15). place is nil for a player who
+-- left the game; players out in the same round share a place.
+export type Standing = {
+	userId: number,
+	name: string,
+	place: number?,
+	roundsSurvived: number,
+	winner: boolean,
+	left: boolean,
+}
+
 export type MatchResultPayload = {
 	winnerUserIds: { number },
 	winnerNames: { string },
+	standings: { Standing }, -- best first
+	rounds: number, -- rounds played in the match
 }
 
 return {}

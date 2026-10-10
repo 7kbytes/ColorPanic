@@ -17,6 +17,7 @@ local Types = require(ReplicatedStorage.Shared.Types)
 local BannerModel = require(script.Parent.BannerModel)
 local HudModel = require(script.Parent.HudModel)
 local LobbyModel = require(script.Parent.LobbyModel)
+local ResultsModel = require(script.Parent.ResultsModel)
 local UiStyle = require(script.Parent.UiStyle)
 
 type ShapeId = Types.ShapeId
@@ -167,6 +168,8 @@ local function makeBadge(
 	return panel, icon, body, text
 end
 
+type ResultRow = { frame: Frame, place: TextLabel, name: TextLabel, detail: TextLabel }
+
 type Widgets = {
 	roundPanel: Frame,
 	roundText: TextLabel,
@@ -189,6 +192,11 @@ type Widgets = {
 	lobbyTitle: TextLabel,
 	lobbyCount: TextLabel,
 	lobbyStatus: TextLabel,
+	results: Frame,
+	resultsTitle: TextLabel,
+	resultsSubtitle: TextLabel,
+	resultsRows: { ResultRow },
+	resultsMore: TextLabel,
 }
 
 local function buildGui(): Widgets
@@ -317,6 +325,64 @@ local function buildGui(): Widgets
 	end
 	lobbyPanel.Parent = screenGui
 
+	-- Results panel (D-15): crown and title, subtitle, then one row per player, best first.
+	local RESULTS = Config.Results
+	local results = makePanel(
+		"Results",
+		RESULTS.size,
+		Vector2.new(0.5, 0.5),
+		UDim2.fromScale(0.5, RESULTS.centerY)
+	)
+	local header = Instance.new("Frame")
+	header.Name = "Header"
+	header.BackgroundTransparency = 1
+	header.Size = UDim2.fromScale(1, RESULTS.headerShare)
+	header.Parent = results
+	local headerLayout = Instance.new("UIListLayout")
+	headerLayout.FillDirection = Enum.FillDirection.Horizontal
+	headerLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	headerLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	headerLayout.Padding = UDim.new(0, HUD.padding)
+	headerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	headerLayout.Parent = header
+	local resultsCrown = makeIcon(header, 0.15)
+	resultsCrown.slot.LayoutOrder = 1
+	setIcon(resultsCrown, { { id = Config.Assets.Images.crown, tint = UNTINTED } }, "")
+	local resultsTitle = makeText("Title", header, HEADING_FONT, Config.Banner.maxTitleSize)
+	resultsTitle.LayoutOrder = 2
+	resultsTitle.Size = UDim2.fromScale(0.8, 1)
+	local resultsSubtitle = makeText("Subtitle", results, BODY_FONT)
+	resultsSubtitle.Position = UDim2.fromScale(0, RESULTS.headerShare)
+	resultsSubtitle.Size = UDim2.fromScale(1, RESULTS.subtitleShare)
+
+	local listTop = RESULTS.headerShare + RESULTS.subtitleShare
+	local rowHeight = (1 - listTop) / (RESULTS.maxRows + 1) -- one extra line for "+N more"
+	local resultsRows: { ResultRow } = {}
+	for index = 1, RESULTS.maxRows do
+		local frame = Instance.new("Frame")
+		frame.Name = "Row" .. index
+		frame.BackgroundColor3 = toColor3(RESULTS.selfRgb)
+		frame.BorderSizePixel = 0
+		frame.Position = UDim2.fromScale(0, listTop + (index - 1) * rowHeight)
+		frame.Size = UDim2.fromScale(1, rowHeight)
+		addCorner(frame)
+		frame.Parent = results
+		local place = makeText("Place", frame, HEADING_FONT)
+		place.Size = UDim2.fromScale(RESULTS.placeShare, 1)
+		local name = makeText("Name", frame, BODY_FONT)
+		name.Position = UDim2.fromScale(RESULTS.placeShare, 0)
+		name.Size = UDim2.fromScale(1 - RESULTS.placeShare - RESULTS.detailShare, 1)
+		name.TextXAlignment = Enum.TextXAlignment.Left
+		local detail = makeText("Detail", frame, BODY_FONT)
+		detail.Position = UDim2.fromScale(1 - RESULTS.detailShare, 0)
+		detail.Size = UDim2.fromScale(RESULTS.detailShare, 1)
+		resultsRows[index] = { frame = frame, place = place, name = name, detail = detail }
+	end
+	local resultsMore = makeText("More", results, BODY_FONT)
+	resultsMore.Position = UDim2.fromScale(0, listTop + RESULTS.maxRows * rowHeight)
+	resultsMore.Size = UDim2.fromScale(1, rowHeight)
+	results.Parent = screenGui
+
 	screenGui.Parent = playerGui
 	hudGui = screenGui
 	return {
@@ -341,6 +407,11 @@ local function buildGui(): Widgets
 		lobbyTitle = lobbyRows[1],
 		lobbyCount = lobbyRows[2],
 		lobbyStatus = lobbyRows[3],
+		results = results,
+		resultsTitle = resultsTitle,
+		resultsSubtitle = resultsSubtitle,
+		resultsRows = resultsRows,
+		resultsMore = resultsMore,
 	}
 end
 
@@ -450,6 +521,30 @@ local function drawLobby(w: Widgets, lobby: LobbyModel.View?)
 	setText(w.lobbyStatus, lobby.status)
 end
 
+local function drawResults(w: Widgets, view: ResultsModel.View?)
+	w.results.Visible = view ~= nil
+	if not view then
+		return
+	end
+	setText(w.resultsTitle, view.title)
+	setText(w.resultsSubtitle, view.subtitle)
+	for index, row in w.resultsRows do
+		local data = view.rows[index]
+		row.frame.Visible = data ~= nil
+		if data then
+			setText(row.place, data.place)
+			setText(row.name, data.name)
+			setText(row.detail, data.detail)
+			row.place.TextColor3 =
+				toColor3(if data.winner then Config.Results.winnerRgb else HUD.textRgb)
+			-- Only the local player's row has a background.
+			row.frame.BackgroundTransparency = if data.isSelf then 0 else 1
+		end
+	end
+	w.resultsMore.Visible = view.more > 0
+	setText(w.resultsMore, string.format("+%d more", view.more))
+end
+
 -- Shows or hides the whole HUD (hidden while the menu is up).
 function HUDController.setVisible(visible: boolean)
 	if hudGui then
@@ -479,7 +574,12 @@ function HUDController.start()
 		-- In the lobby the panel says what the status line would; spectators keep the status
 		-- line, since it describes the match they are watching.
 		local lobbySaysIt = lobby ~= nil and model.state == "Lobby"
-		widgets.status.Visible = banner == nil and not lobbySaysIt
+		local resultsView = if model.state == "Victory" and model.matchResult
+			then ResultsModel.view(model.matchResult, localPlayer.UserId, Config.Results.maxRows)
+			else nil
+		drawResults(widgets, resultsView)
+		-- The banner, the lobby panel and the results panel each replace the status line.
+		widgets.status.Visible = banner == nil and not lobbySaysIt and resultsView == nil
 		setText(widgets.status, view.status)
 
 		widgets.roundPanel.Visible = view.roundText ~= nil

@@ -27,6 +27,7 @@ export type Model = {
 	targetRevealUntil: number?, -- server time the target hides, in reveal-then-hide rounds
 	playersLeft: number?,
 	winnerNames: { string }?,
+	matchResult: Types.MatchResultPayload?, -- the full result, for the results panel (D-15)
 }
 
 -- What the HUD shows for the target right now.
@@ -95,6 +96,7 @@ function HudModel.applyState(model: Model, payload: Types.StateChangedPayload)
 	-- just before or just after the Victory state; either way the names are kept.
 	if payload.state ~= "Victory" then
 		model.winnerNames = nil
+		model.matchResult = nil
 	end
 	if OUT_OF_MATCH[payload.state] then
 		model.seq = nil
@@ -161,6 +163,7 @@ end
 
 function HudModel.applyMatchResult(model: Model, payload: Types.MatchResultPayload)
 	model.winnerNames = table.clone(payload.winnerNames)
+	model.matchResult = payload
 end
 
 -- "Winner: A", "Winners: A and B", "Winners: A, B and C", or with more than

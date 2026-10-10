@@ -14,6 +14,7 @@ local Broadcast = require(script.Parent.Broadcast)
 local EliminationRules = require(script.Parent.EliminationRules)
 local EliminationService = require(script.Parent.EliminationService)
 local MatchFlow = require(script.Parent.MatchFlow)
+local MatchResults = require(script.Parent.MatchResults)
 local PlacementService = require(script.Parent.PlacementService)
 local QueueRules = require(script.Parent.QueueRules)
 local ResetAudit = require(script.Parent.ResetAudit)
@@ -42,6 +43,8 @@ local diedThisRound: { [Player]: boolean } = {} -- survivors whose character die
 local isReplay = false -- the current round is a replay after everyone fell
 local replayPending = false -- the next RoundIntro replays the current round
 local sharedWin = false -- everyone remaining failed a replay and shares the win
+-- Who went out this match and when, for the results panel (D-15). Cleared at match start.
+local outs: { MatchResults.Out } = {}
 local matchResult: Types.MatchResultPayload? = nil -- set on entering Victory, cleared on Reset
 -- Goes up by one on every RoundIntro, replays included; sent with RoundInfo and the target.
 local roundSeq = 0
@@ -124,6 +127,7 @@ local function startMatch()
 	round = 0
 	table.clear(survivors)
 	table.clear(spectators)
+	table.clear(outs)
 	resetRoundFlags()
 	for player in queued do
 		survivors[player] = true
@@ -178,6 +182,10 @@ local function eliminate(player: Player)
 	survivors[player] = nil
 	spectators[player] = true
 	syncRole(player)
+	table.insert(
+		outs,
+		{ userId = player.UserId, name = player.DisplayName, round = round, left = false }
+	)
 	local playersLeft = countSurvivors()
 	print(string.format("[Elimination] %s is out, %d left", player.Name, playersLeft))
 	PlacementService.toSpectator(player)
@@ -254,12 +262,21 @@ local function onEnter(previous: MatchState, nextState: MatchState)
 		table.sort(winners, function(a, b)
 			return a.DisplayName < b.DisplayName
 		end)
-		local result: Types.MatchResultPayload = { winnerUserIds = {}, winnerNames = {} }
+		local winnerInfo: { MatchResults.Player } = {}
 		local names: { string } = {}
+		for _, player in winners do
+			table.insert(winnerInfo, { userId = player.UserId, name = player.DisplayName })
+			table.insert(names, player.Name)
+		end
+		local result: Types.MatchResultPayload = {
+			winnerUserIds = {},
+			winnerNames = {},
+			standings = MatchResults.build(winnerInfo, outs, round),
+			rounds = round,
+		}
 		for _, player in winners do
 			table.insert(result.winnerUserIds, player.UserId)
 			table.insert(result.winnerNames, player.DisplayName)
-			table.insert(names, player.Name)
 		end
 		matchResult = result
 		print(string.format("[Match] Winners: %s", table.concat(names, ", ")))
@@ -629,6 +646,13 @@ local function onPlayerRemoving(player: Player)
 	-- Leaving removes the player from the survivor count without ending the round.
 	local wasSurvivor = survivors[player] == true
 	local wasQueued = queued[player] == true
+	if wasSurvivor and inMatch then
+		-- Out of the match: listed as "left" in the results.
+		table.insert(
+			outs,
+			{ userId = player.UserId, name = player.DisplayName, round = round, left = true }
+		)
+	end
 	queued[player] = nil
 	lastRequestAt[player] = nil
 	spawning[player] = nil

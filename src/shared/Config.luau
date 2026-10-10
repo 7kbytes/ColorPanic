@@ -210,6 +210,19 @@ local Config: Types.ConfigType = {
 		spectateButtonSize = { 0.16, 0.08 }, -- the Spectate button for mid-match joiners
 	},
 
+	-- Match results panel (D-15), shown during Victory. Same panel style as the HUD.
+	Results = {
+		size = { 0.52, 0.66 }, -- { width, height } fractions of the safe screen area
+		centerY = 0.5,
+		maxRows = 6, -- players listed; the rest show as "+N more"
+		headerShare = 0.2, -- fractions of the panel height
+		subtitleShare = 0.1,
+		placeShare = 0.18, -- fractions of a row's width
+		detailShare = 0.3,
+		selfRgb = { 90, 84, 130 }, -- background of the local player's row
+		winnerRgb = { 255, 214, 10 }, -- place text for winners
+	},
+
 	-- Roblox Image asset IDs (owner: the game's owner), from "Color Panic Asset IDs.xlsx".
 	-- Only the assets the code uses so far; later tasks add theirs. 0 shows a text fallback.
 	Assets = {
