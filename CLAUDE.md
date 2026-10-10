@@ -39,7 +39,9 @@ We are now on the 3-day demo build. Demo tasks use branches named `demo/<task-id
 
 - D-09 Title screen in the concept board layout, "Red Heart" target naming, blue panels
 
-In progress: D-09b Concept polish (lobby panel top centre, spectator mode, eliminated ribbon, winner title). Remaining, in order: D-11 (QA on a published private copy with 4 or more clients), then D-10 if time allows (day 3).
+- D-09b Concept polish (lobby panel top centre, spectator mode, eliminated ribbon, winner title)
+
+In progress: D-11 QA on a published private copy with 4 or more players. The checklist is `qa/demo-qa.md`; the producer runs it with real players, then reports Fail rows for fixing before the freeze. Then D-10 if time allows (day 3).
 
 Design reference: the concept board (not final art). Color and shape pairs follow art/palette.json, not the concept board (producer decision). No new features after midday on day 3. The README update is out of scope for the demo.
 
