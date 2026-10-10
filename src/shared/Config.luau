@@ -198,6 +198,18 @@ local Config: Types.ConfigType = {
 		leaveAspect = 512 / 192, -- width / height of the Leave button art
 	},
 
+	-- Eliminated card and spectate bar (D-14). Same panel style as the HUD.
+	Spectate = {
+		dimTransparency = 0.45, -- the backdrop behind the eliminated card
+		dimRgb = { 10, 8, 24 },
+		cardSize = { 0.4, 0.52 }, -- { width, height } fractions of the safe screen area
+		barSize = { 0.5, 0.09 }, -- the "Watching" bar, bottom centre
+		barBottom = 0.13, -- gap under the bar, so it sits above the timer bar
+		buttonRgb = { 60, 190, 90 }, -- Spectate
+		quietButtonRgb = { 90, 84, 130 }, -- Close, Stop and the arrows
+		spectateButtonSize = { 0.16, 0.08 }, -- the Spectate button for mid-match joiners
+	},
+
 	-- Roblox Image asset IDs (owner: the game's owner), from "Color Panic Asset IDs.xlsx".
 	-- Only the assets the code uses so far; later tasks add theirs. 0 shows a text fallback.
 	Assets = {
@@ -222,6 +234,8 @@ local Config: Types.ConfigType = {
 				diamond = 86763642426459,
 			},
 			leave = 131161271982260, -- A-09, red "Back" button art used for Leave
+			sadFace = 114507417954529, -- A-07, eliminated card
+			eye = 92667144225263, -- A-08, spectate bar
 			crown = 81195306124170, -- A-04, round badge
 			player = 139725380431484, -- A-05, players left
 			stopwatch = 112716861247418, -- A-06, timer bar
