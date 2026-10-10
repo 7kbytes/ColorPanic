@@ -2,7 +2,7 @@
 
 QA for the 3-day demo build on a **published private copy**, with **4 or more real players**. Do not run 8 local Studio clients (the machine runs out of memory). Fill in the Result column (Pass, Fail or Skip) and add notes or screenshots. Then send the file back and I will fix what fails before the freeze.
 
-- **Build:** `main` at the commit you publish (write it here): `________`
+- **Build:** `main` at the commit you publish, `56e3f9f` or later so it includes D-10 (write it here): `________`
 - **Date:** `________`
 - **Testers and devices:** `________`
 
@@ -51,6 +51,17 @@ QA for the 3-day demo build on a **published private copy**, with **4 or more re
 | 13 | Rounds 3 and later (reveal rounds) | Intro says "Memorize the color!". The card shows "?" until Run starts, then shows the target for about 2 s (chime), then "?" again (lower chime). | | |
 | 14 | Everyone falls in a round | "Everyone fell! / Round N again" banner and the round replays | | |
 | 15 | Round 8 (round cap) | Intro says "Final round!" in yellow | | |
+
+### Shrinking tiles (D-10)
+
+Numbered 37 to 40 so the other checks keep their numbers. Rounds 4 to 8 need 2 or more players to survive the early rounds, so stand on the target on purpose.
+
+| # | Check | Expected | Result | Notes |
+| --- | --- | --- | --- | --- |
+| 37 | Rounds 1 to 3 | Tiles at full size, no gaps between them | | |
+| 38 | Round 4 intro | Banner adds "Tiles are shrinking!". Tiles are a little smaller (92%) with thin gaps. Server log: `[Round] 4 tiles at 92% size`. | | |
+| 39 | Rounds 5 to 8 | Tiles get smaller each round (84%, 76%, 68%, then 60% at round 8). Tile art and the darker base shrink with them. No "Tiles are shrinking!" after round 4. | | |
+| 40 | Standing near a tile edge, and in a gap | Near the edge of a target tile you stay safe. In the gap between tiles you fall and are out. Note whether 60% at round 8 feels too hard. | | |
 
 ### Eliminated and spectating (D-14, D-09b)
 
@@ -102,13 +113,13 @@ QA for the 3-day demo build on a **published private copy**, with **4 or more re
 
 - On desktop, the Roblox chat window can overlap the logo and the left edge of the lobby panel. Phones collapse the chat.
 - **Not seen in Studio yet:**
-  - the single-winner "Winner!" title
   - the red "Eliminated!" ribbon
   - switching with the arrows
   - the "left" row in the results
   - the reveal chime and eliminated sound
 
-  Checks 13, 16, 18, 22, 24 and 25 cover them.
+  Checks 13, 16, 18, 24 and 25 cover them. The gold "Winner!" title, the "Spectator mode" panel and the purple Spectate button were seen in Studio during D-10 QA.
+- Shrinking tiles (checks 37 to 40) were only seen in Studio at 60% in round 1. Rounds 4 to 8 at their real sizes need a real match.
 - #15 (a survivor on a target tile judged out) was traced to the old QA actor and not seen since. If someone is knocked out while clearly standing on the target, copy the server log lines that start with `[Elimination]`.
 
 ## 4. How to report
