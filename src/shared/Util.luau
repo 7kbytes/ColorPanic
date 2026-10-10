@@ -25,6 +25,18 @@ function Util.hexToRgb(hex: string): { number }
 end
 
 -- Returns the palette entry with this id, or nil if there is none.
+-- The tile art asset ID for a palette color, looked up through the color's shape. nil when the
+-- color is unknown or its art has no ID yet (0).
+function Util.getTileImageId(
+	colors: { Types.ColorDef },
+	shapeTiles: { [Types.ShapeId]: number },
+	id: Types.ColorId
+): number?
+	local colorDef = Util.getColorDef(colors, id)
+	local imageId = if colorDef then shapeTiles[colorDef.shape] else nil
+	return if imageId and imageId ~= 0 then imageId else nil
+end
+
 function Util.getColorDef(colors: { Types.ColorDef }, id: Types.ColorId): Types.ColorDef?
 	for _, colorDef in colors do
 		if colorDef.id == id then

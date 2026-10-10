@@ -125,6 +125,7 @@ export type ConfigType = {
 		timerFillRgb: { number },
 		warningRgb: { number },
 		hiddenText: string,
+		untintedRgb: { number },
 		decimalBelowSeconds: number,
 		maxWinnerNames: number,
 	},
@@ -132,6 +133,7 @@ export type ConfigType = {
 	Assets: {
 		Images: {
 			shapeIcon: { [ShapeId]: number },
+			shapeTile: { [ShapeId]: number },
 			crown: number,
 			player: number,
 			stopwatch: number,
