@@ -14,10 +14,10 @@ local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
-local Util = require(ReplicatedStorage.Shared.Util)
 local BannerModel = require(script.Parent.BannerModel)
 local HudModel = require(script.Parent.HudModel)
 local LobbyModel = require(script.Parent.LobbyModel)
+local UiStyle = require(script.Parent.UiStyle)
 
 type ShapeId = Types.ShapeId
 
@@ -28,93 +28,15 @@ local HUDController = {}
 local started = false
 local hudGui: ScreenGui? = nil
 
-local function toColor3(rgb: { number }): Color3
-	return Color3.fromRGB(rgb[1], rgb[2], rgb[3])
-end
-
-local function hexColor(hex: string): Color3
-	return toColor3(Util.hexToRgb(hex))
-end
-
--- The Enum.Font called `name`, or the fallback font if there is none by that name.
-local function fontNamed(name: string): Enum.Font
-	for _, candidate in { name, HUD.fallbackFont } do
-		local ok, font = pcall(function()
-			return (Enum.Font :: any)[candidate]
-		end)
-		if ok and typeof(font) == "EnumItem" then
-			return font :: any
-		end
-	end
-	return Enum.Font.BuilderSansBold
-end
-
-local HEADING_FONT = fontNamed(HUD.headingFont)
-local BODY_FONT = fontNamed(HUD.bodyFont)
-
-local function assetUrl(id: number): string
-	return "rbxassetid://" .. tostring(id)
-end
-
-local function addCorner(parent: GuiObject)
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, HUD.cornerRadius)
-	corner.Parent = parent
-end
-
-local function addPadding(parent: GuiObject)
-	local padding = Instance.new("UIPadding")
-	local pixels = UDim.new(0, HUD.padding)
-	padding.PaddingTop = pixels
-	padding.PaddingBottom = pixels
-	padding.PaddingLeft = pixels
-	padding.PaddingRight = pixels
-	padding.Parent = parent
-end
-
-local function makePanel(name: string, size: { number }, anchor: Vector2, position: UDim2): Frame
-	local panel = Instance.new("Frame")
-	panel.Name = name
-	panel.AnchorPoint = anchor
-	panel.Position = position
-	panel.Size = UDim2.fromScale(size[1], size[2])
-	panel.BackgroundColor3 = toColor3(HUD.panelRgb)
-	panel.BackgroundTransparency = HUD.panelTransparency
-	panel.BorderSizePixel = 0
-	panel.Visible = false
-	addCorner(panel)
-	addPadding(panel)
-	return panel
-end
-
--- White text with a dark outline, scaled to fit its box.
-local function makeText(
-	name: string,
-	parent: Instance,
-	font: Enum.Font,
-	maxTextSize: number?
-): TextLabel
-	local label = Instance.new("TextLabel")
-	label.Name = name
-	label.BackgroundTransparency = 1
-	label.Size = UDim2.fromScale(1, 1)
-	label.Font = font
-	label.TextColor3 = toColor3(HUD.textRgb)
-	label.TextScaled = true
-	label.Text = ""
-	label.Parent = parent
-
-	local sizeLimit = Instance.new("UITextSizeConstraint")
-	sizeLimit.MinTextSize = HUD.minTextSize
-	sizeLimit.MaxTextSize = maxTextSize or HUD.maxTextSize
-	sizeLimit.Parent = label
-
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = toColor3(HUD.strokeRgb)
-	stroke.Thickness = HUD.strokeThickness
-	stroke.Parent = label
-	return label
-end
+local toColor3 = UiStyle.toColor3
+local hexColor = UiStyle.hexColor
+local HEADING_FONT = UiStyle.HEADING_FONT
+local BODY_FONT = UiStyle.BODY_FONT
+local assetUrl = UiStyle.assetUrl
+local addCorner = UiStyle.addCorner
+local addPadding = UiStyle.addPadding
+local makePanel = UiStyle.makePanel
+local makeText = UiStyle.makeText
 
 -- One image an icon can show, tinted with `tint` (UNTINTED leaves the art as drawn).
 type IconChoice = { id: number, tint: Color3 }
