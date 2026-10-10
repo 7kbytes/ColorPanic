@@ -5,10 +5,14 @@ export type ColorId = number
 
 export type RGB = { number }
 
+-- Each color is paired 1:1 with a shape, so players never rely on color alone.
+export type ShapeId = "heart" | "triangle" | "star" | "circle" | "square" | "diamond"
+
 export type ColorDef = {
 	id: ColorId,
 	name: string,
-	rgb: RGB,
+	hex: string, -- "#RRGGBB", exactly as in art/palette.json
+	shape: ShapeId,
 }
 
 export type DifficultyRow = {

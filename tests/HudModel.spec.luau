@@ -6,12 +6,17 @@ local Config = Harness.requireModule("ReplicatedStorage.Shared.Config")
 
 local NOW = 1000
 
--- A model in the middle of round 3, Run state, 4 players left, target Blue.
+-- Payloads use the real palette from Config, as the server sends them.
+local function targetPayload(id: number)
+	return { colorId = id, name = Config.Colors[id].name }
+end
+
+-- A model in the middle of round 3, Run state, 4 players left, target color 2.
 local function midRound()
 	local model = HudModel.new()
 	HudModel.applyState(model, { state = "RoundIntro", endsAt = NOW + 3 })
 	HudModel.applyRoundInfo(model, { round = 3, timerSeconds = 8, playersLeft = 4 })
-	HudModel.applyTarget(model, { colorId = 2, name = "Blue" })
+	HudModel.applyTarget(model, targetPayload(2))
 	HudModel.applyState(model, { state = "Run", endsAt = NOW + 8 })
 	return model
 end
@@ -45,7 +50,7 @@ describe("HudModel.lines", function()
 		local lines = HudModel.lines(midRound(), NOW + 1)
 		expect(lines.state).toBe("Run!")
 		expect(lines.round).toBe("Round: 3")
-		expect(lines.target).toBe("Target: Blue")
+		expect(lines.target).toBe("Target: " .. Config.Colors[2].name)
 		expect(lines.timer).toBe("Time: 7.0")
 		expect(lines.playersLeft).toBe("Players left: 4")
 	end)
@@ -90,10 +95,10 @@ describe("HudModel updates", function()
 		local model = midRound()
 		HudModel.applyState(model, { state = "RoundIntro", endsAt = NOW + 3 })
 		HudModel.applyRoundInfo(model, { round = 4, timerSeconds = 7, playersLeft = 4 })
-		HudModel.applyTarget(model, { colorId = 5, name = "Purple" })
+		HudModel.applyTarget(model, targetPayload(5))
 		local lines = HudModel.lines(model, NOW)
 		expect(lines.round).toBe("Round: 4")
-		expect(lines.target).toBe("Target: Purple")
+		expect(lines.target).toBe("Target: " .. Config.Colors[5].name)
 	end)
 
 	it("Elimination, RoundEnd and Victory keep the round details", function()
@@ -102,7 +107,7 @@ describe("HudModel updates", function()
 			HudModel.applyState(model, { state = state, endsAt = NOW + 2 })
 			local lines = HudModel.lines(model, NOW)
 			expect(lines.round).toBe("Round: 3")
-			expect(lines.target).toBe("Target: Blue")
+			expect(lines.target).toBe("Target: " .. Config.Colors[2].name)
 			expect(lines.playersLeft).toBe("Players left: 4")
 		end
 	end)
@@ -123,11 +128,11 @@ describe("HudModel updates", function()
 		local model = HudModel.new()
 		HudModel.applyState(model, { state = "Run", endsAt = NOW + 5 })
 		HudModel.applyRoundInfo(model, { round = 2, timerSeconds = 9, playersLeft = 5 })
-		HudModel.applyTarget(model, { colorId = 1, name = "Red" })
+		HudModel.applyTarget(model, targetPayload(1))
 		local lines = HudModel.lines(model, NOW)
 		expect(lines.state).toBe("Run!")
 		expect(lines.round).toBe("Round: 2")
-		expect(lines.target).toBe("Target: Red")
+		expect(lines.target).toBe("Target: " .. Config.Colors[1].name)
 		expect(lines.timer).toBe("Time: 5.0")
 		expect(lines.playersLeft).toBe("Players left: 5")
 	end)

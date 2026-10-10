@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
+local Util = require(ReplicatedStorage.Shared.Util)
 local ArenaLayout = require(script.Parent.ArenaLayout)
 
 type ColorId = Types.ColorId
@@ -17,9 +18,11 @@ local ArenaService = {}
 
 local rng = Random.new()
 
-local colorsById: { [ColorId]: Types.ColorDef } = {}
+-- Tile color for each palette id, converted once from the hex in Config.
+local tileColorById: { [ColorId]: Color3 } = {}
 for _, colorDef in Config.Colors do
-	colorsById[colorDef.id] = colorDef
+	local rgb = Util.hexToRgb(colorDef.hex)
+	tileColorById[colorDef.id] = Color3.fromRGB(rgb[1], rgb[2], rgb[3])
 end
 
 local function getFolder(parent: Instance, name: string): Instance
@@ -74,8 +77,8 @@ function ArenaService.build(colorIds: { ColorId }, guarantee: ArenaLayout.Guaran
 	for row = 1, gridSize do
 		for col = 1, gridSize do
 			local colorId = layout[(row - 1) * gridSize + col]
-			local colorDef = colorsById[colorId]
-			assert(colorDef, string.format("Unknown color id %d", colorId))
+			local tileColor = tileColorById[colorId]
+			assert(tileColor, string.format("Unknown color id %d", colorId))
 
 			local tile = Instance.new("Part")
 			tile.Name = string.format("Tile_%d_%d", row, col)
@@ -87,7 +90,7 @@ function ArenaService.build(colorIds: { ColorId }, guarantee: ArenaLayout.Guaran
 				origin[2],
 				origin[3] + (row - 1 - centerOffset) * tileSize
 			)
-			tile.Color = Color3.fromRGB(colorDef.rgb[1], colorDef.rgb[2], colorDef.rgb[3])
+			tile.Color = tileColor
 			tile:SetAttribute(COLOR_ATTRIBUTE, colorId)
 			tile.Parent = folder
 		end
