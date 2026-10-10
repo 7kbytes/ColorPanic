@@ -478,7 +478,13 @@ function MatchService.start()
 		onPlayerAdded(player)
 	end
 
-	print("[Match] Starting in Lobby")
+	print(
+		string.format(
+			"[Match] Starting in Lobby (preset %s, round cap %s)",
+			Config.activePreset,
+			if Config.Match.maxRounds == math.huge then "none" else tostring(Config.Match.maxRounds)
+		)
+	)
 	task.spawn(function()
 		while true do
 			runCurrentState()
@@ -487,6 +493,8 @@ function MatchService.start()
 				survivorCount = countSurvivors(),
 				minPlayers = getMinPlayers(),
 				sharedWin = sharedWin,
+				round = round,
+				maxRounds = Config.Match.maxRounds,
 			}))
 		end
 	end)

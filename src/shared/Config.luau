@@ -5,7 +5,38 @@
 local Types = require(script.Parent.Types)
 local Util = require(script.Parent.Util)
 
+-- Which preset to apply on top of the normal values below. "normal" changes nothing.
+local ACTIVE_PRESET = "demo"
+
+-- Presets list only the values that differ from normal. Nested tables merge field by field;
+-- lists such as Difficulty are replaced whole. See Util.applyOverrides.
+local PRESETS: { [string]: { [string]: any } } = {
+	normal = {},
+
+	-- Demo build: a short intermission, quicker early rounds and a cap of 8 rounds, so a
+	-- match takes about 3 minutes even if nobody falls. Draft values, tune in playtests.
+	demo = {
+		Match = {
+			intermissionSeconds = 5,
+			maxRounds = 8,
+		},
+		StateSeconds = {
+			RoundIntro = 4, -- room for the round intro banner (D-12)
+			RoundEnd = 3,
+			Victory = 8, -- room for the results panel (D-15)
+		},
+		Difficulty = {
+			{ firstRound = 1, lastRound = 2, timerStart = 14, timerEnd = 14, colorCount = 3 },
+			{ firstRound = 3, lastRound = 4, timerStart = 12, timerEnd = 12, colorCount = 4 },
+			{ firstRound = 5, lastRound = 6, timerStart = 10, timerEnd = 10, colorCount = 5 },
+			{ firstRound = 7, lastRound = nil, timerStart = 9, timerEnd = 9, colorCount = 6 },
+		} :: { Types.DifficultyRow },
+	},
+}
+
 local Config: Types.ConfigType = {
+	activePreset = ACTIVE_PRESET,
+
 	-- Final palette from the artist, copied from art/palette.json (a test keeps them in step).
 	-- The only place in the game that defines a color, its name, hex or shape.
 	Colors = {
@@ -31,6 +62,9 @@ local Config: Types.ConfigType = {
 		-- Studio test flag: when true, a one-player match is allowed in Studio only.
 		studioSinglePlayerEnabled = false,
 		intermissionSeconds = 10,
+		-- Last round of a match; everyone still standing after it shares the win.
+		-- math.huge means no cap: the match runs until one survivor is left.
+		maxRounds = math.huge,
 		-- How often waiting states check for cancellation, in seconds.
 		pollSeconds = 0.25,
 	},
@@ -106,5 +140,9 @@ local Config: Types.ConfigType = {
 		{ firstRound = 10, lastRound = nil, timerStart = 4, timerEnd = 4, colorCount = 6 },
 	},
 }
+
+local preset = PRESETS[ACTIVE_PRESET]
+assert(preset, string.format("Unknown Config preset %q", ACTIVE_PRESET))
+Util.applyOverrides(Config :: any, preset)
 
 return Util.deepFreeze(Config)
