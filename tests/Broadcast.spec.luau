@@ -36,7 +36,7 @@ describe("Broadcast order", function()
 	it("brings a joiner up to date with the state last", function()
 		local order = Broadcast.onJoin()
 		expect(order[#order]).toBe("StateChanged")
-		for _, message in { "MatchResult", "RoundInfo", "Target" } do
+		for _, message in { "LobbyInfo", "MatchResult", "RoundInfo", "Target" } do
 			expect(indexOf(order, message) < #order).toBe(true)
 		end
 		expect(table.find(order, "Reveal")).toBe(nil)

@@ -188,6 +188,16 @@ local Config: Types.ConfigType = {
 		replayRgb = { 255, 138, 31 }, -- title color for "Everyone fell!"
 	},
 
+	-- Lobby panel (D-13): queue count and status on the left, vertically centred, clear of the
+	-- chat (top left), the centre banner and the thumbstick (bottom left). Leave sits under it.
+	Lobby = {
+		margin = 0.015, -- gap to the screen edge and between the panel and Leave
+		panelSize = { 0.22, 0.2 }, -- { width, height } fractions of the safe screen area
+		centerY = 0.45,
+		leaveWidth = 0.16, -- fraction of the screen width; height follows the button art
+		leaveAspect = 512 / 192, -- width / height of the Leave button art
+	},
+
 	-- Roblox Image asset IDs (owner: the game's owner), from "Color Panic Asset IDs.xlsx".
 	-- Only the assets the code uses so far; later tasks add theirs. 0 shows a text fallback.
 	Assets = {
@@ -211,6 +221,7 @@ local Config: Types.ConfigType = {
 				square = 81677246211262,
 				diamond = 86763642426459,
 			},
+			leave = 131161271982260, -- A-09, red "Back" button art used for Leave
 			crown = 81195306124170, -- A-04, round badge
 			player = 139725380431484, -- A-05, players left
 			stopwatch = 112716861247418, -- A-06, timer bar
@@ -234,8 +245,6 @@ local Config: Types.ConfigType = {
 		titleY = 0.22, -- vertical centre of the title
 		playSize = { 0.32, 0.16 },
 		playY = 0.62,
-		leaveSize = { 0.16, 0.08 },
-		leavePosition = { 0.02, 0.2 }, -- top left corner, clear of the touch controls
 		buttonRgb = { 60, 190, 90 },
 		leaveRgb = { 200, 70, 70 },
 		textRgb = { 255, 255, 255 },

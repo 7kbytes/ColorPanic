@@ -129,6 +129,13 @@ export type ConfigType = {
 		decimalBelowSeconds: number,
 		maxWinnerNames: number,
 	},
+	Lobby: {
+		margin: number,
+		panelSize: { number },
+		centerY: number,
+		leaveWidth: number,
+		leaveAspect: number,
+	},
 	Banner: {
 		size: { number },
 		centerY: number,
@@ -146,6 +153,7 @@ export type ConfigType = {
 		Images: {
 			shapeIcon: { [ShapeId]: number },
 			shapeTile: { [ShapeId]: number },
+			leave: number,
 			crown: number,
 			player: number,
 			stopwatch: number,
@@ -165,8 +173,6 @@ export type ConfigType = {
 		titleY: number,
 		playSize: { number },
 		playY: number,
-		leaveSize: { number },
-		leavePosition: { number },
 		buttonRgb: { number },
 		leaveRgb: { number },
 		textRgb: { number },
@@ -214,6 +220,12 @@ export type TargetAnnouncedPayload = {
 	name: string,
 	revealUntil: number?,
 	revealSeconds: number?, -- so each client shows it at least this long after it arrives
+}
+
+-- The join queue (D-13): players who pressed Play, and how many a match needs to start.
+export type LobbyInfoPayload = {
+	queued: number,
+	needed: number,
 }
 
 export type PlayerEliminatedPayload = {

@@ -16,6 +16,7 @@ local NAMES = {
 	"TargetAnnounced",
 	"PlayerEliminated",
 	"MatchResult",
+	"LobbyInfo",
 	"RequestPlay",
 	"RequestLeave",
 }
@@ -91,6 +92,7 @@ Remotes.TargetAnnounced =
 Remotes.PlayerEliminated =
 	serverToClient("PlayerEliminated") :: ServerToClient<Types.PlayerEliminatedPayload>
 Remotes.MatchResult = serverToClient("MatchResult") :: ServerToClient<Types.MatchResultPayload>
+Remotes.LobbyInfo = serverToClient("LobbyInfo") :: ServerToClient<Types.LobbyInfoPayload>
 
 -- Creates the Remotes folder and every RemoteEvent. Call once at server startup,
 -- before any service fires. Safe to call again.

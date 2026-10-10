@@ -3,6 +3,7 @@
 -- the camera circling the arena. Play and Leave only send requests; the server decides and
 -- answers through the MatchRole attribute.
 
+local ContentProvider = game:GetService("ContentProvider")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -55,7 +56,61 @@ local function makeButton(name: string, text: string, rgb: { number }): TextButt
 	return button
 end
 
-type Gui = { panel: Frame, play: TextButton, leave: TextButton }
+-- Leave (D-13): the red "Back" button art under the lobby panel. If the art is not uploaded (ID
+-- 0) or fails to load, a plain red button with the word Leave stands in.
+local function makeLeaveButton(): ImageButton
+	local lobby = Config.Lobby
+	local leave = Instance.new("ImageButton")
+	leave.Name = "Leave"
+	leave.BackgroundTransparency = 1
+	leave.BackgroundColor3 = toColor3(Config.Menu.leaveRgb)
+	leave.ScaleType = Enum.ScaleType.Fit
+	leave.Position =
+		UDim2.fromScale(lobby.margin, lobby.centerY + lobby.panelSize[2] / 2 + lobby.margin)
+	leave.Size = UDim2.fromScale(lobby.leaveWidth, 1)
+	local aspect = Instance.new("UIAspectRatioConstraint")
+	aspect.AspectRatio = lobby.leaveAspect
+	aspect.DominantAxis = Enum.DominantAxis.Width
+	aspect.Parent = leave
+
+	local fallback = Instance.new("TextLabel")
+	fallback.Name = "Fallback"
+	fallback.Text = "Leave"
+	fallback.TextScaled = true
+	fallback.Font = Enum.Font.BuilderSansBold
+	fallback.TextColor3 = toColor3(Config.Menu.textRgb)
+	fallback.BackgroundTransparency = 1
+	fallback.Size = UDim2.fromScale(1, 1)
+	fallback.Visible = false
+	addTextLimit(fallback)
+	fallback.Parent = leave
+
+	local function useFallback()
+		leave.Image = ""
+		leave.BackgroundTransparency = 0
+		addCorner(leave)
+		fallback.Visible = true
+	end
+	local id = Config.Assets.Images.leave
+	if id == 0 then
+		useFallback()
+	else
+		leave.Image = "rbxassetid://" .. tostring(id)
+		task.spawn(function()
+			ContentProvider:PreloadAsync({ leave }, function(_, status)
+				if status ~= Enum.AssetFetchStatus.Success then
+					warn(
+						string.format("[Menu] Leave art %d did not load (%s)", id, tostring(status))
+					)
+					useFallback()
+				end
+			end)
+		end)
+	end
+	return leave
+end
+
+type Gui = { panel: Frame, play: TextButton, leave: ImageButton }
 
 local function buildGui(): Gui
 	local menu = Config.Menu
@@ -94,9 +149,7 @@ local function buildGui(): Gui
 	play.Parent = panel
 
 	-- Leave sits outside the panel: it shows in the lobby, when the menu is hidden.
-	local leave = makeButton("Leave", "Leave", menu.leaveRgb)
-	leave.Position = UDim2.fromScale(menu.leavePosition[1], menu.leavePosition[2])
-	leave.Size = UDim2.fromScale(menu.leaveSize[1], menu.leaveSize[2])
+	local leave = makeLeaveButton()
 	leave.Parent = screenGui
 
 	screenGui.Parent = player:WaitForChild("PlayerGui")
@@ -158,7 +211,7 @@ function MenuController.start()
 
 	-- Buttons only send a request. They stay inactive until the server answers (the role
 	-- changes) or the request cooldown passes, so a double tap sends one request.
-	local function sendOnce(button: TextButton, request: Remotes.ClientRequest)
+	local function sendOnce(button: GuiButton, request: Remotes.ClientRequest)
 		if not button.Active then
 			return
 		end
