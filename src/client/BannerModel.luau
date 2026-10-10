@@ -26,7 +26,6 @@ local function formatSeconds(seconds: number): string
 	return string.format("%g", seconds)
 end
 
--- The intro subtitle: what this round asks of the player.
 -- The target the intro asks for ("Find the Red Heart"), with the Run timer. Reveal rounds keep
 -- the target secret until Run, so they ask players to memorize it instead.
 local function roundSubtitle(model: HudModel.Model, now: number): string
@@ -37,11 +36,16 @@ local function roundSubtitle(model: HudModel.Model, now: number): string
 	local target = HudModel.targetView(model, now)
 	local colorDef = if target.colorId then Util.getColorDef(Config.Colors, target.colorId) else nil
 	if colorDef and timer then
-		return string.format(
+		local text = string.format(
 			"Find the %s · %s seconds",
 			Util.displayName(colorDef),
 			formatSeconds(timer)
 		)
+		-- The first shrinking round warns players (D-10).
+		if model.round == Config.Shrink.fromRound then
+			text ..= " · Tiles are shrinking!"
+		end
+		return text
 	end
 	local colors = model.colorCount
 	if colors and timer then

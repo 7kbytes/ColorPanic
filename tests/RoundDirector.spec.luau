@@ -148,3 +148,40 @@ describe("RoundDirector reveal-then-hide", function()
 		)
 	end)
 end)
+
+describe("RoundDirector shrinking tiles (D-10)", function()
+	local SHRINK = { fromRound = 4, step = 0.08, minScale = 0.6 }
+
+	it("keeps full size before fromRound", function()
+		for round = 1, 3 do
+			expect(RoundDirector.getTileScale(SHRINK, round)).toBe(1)
+		end
+	end)
+
+	it("shrinks by step each round from fromRound", function()
+		local expected = { [4] = 0.92, [5] = 0.84, [6] = 0.76, [7] = 0.68, [8] = 0.6 }
+		for round, scale in expected do
+			expect(RoundDirector.getTileScale(SHRINK, round)).toBeCloseTo(scale)
+		end
+	end)
+
+	it("never goes below minScale", function()
+		expect(RoundDirector.getTileScale(SHRINK, 20)).toBe(0.6)
+	end)
+
+	it("never shrinks when fromRound is math.huge", function()
+		local off = { fromRound = math.huge, step = 0.08, minScale = 0.6 }
+		expect(RoundDirector.getTileScale(off, 500)).toBe(1)
+	end)
+
+	it("gives a replay the same scale as its round", function()
+		local first = RoundDirector.getRoundParams(Config, 6, 2, Harness.fakeRandom(1))
+		local replay = RoundDirector.getRoundParams(Config, 6, 2, Harness.fakeRandom(2))
+		expect(first.tileScale).toBe(replay.tileScale)
+	end)
+
+	it("matches the live Config", function()
+		local params = RoundDirector.getRoundParams(LiveConfig, 1, 2, Harness.fakeRandom(1))
+		expect(params.tileScale).toBe(RoundDirector.getTileScale(LiveConfig.Shrink, 1))
+	end)
+end)

@@ -50,7 +50,7 @@ local baseShadeColor =
 	Color3.fromRGB(TILE_LOOK.baseShadeRgb[1], TILE_LOOK.baseShadeRgb[2], TILE_LOOK.baseShadeRgb[3])
 
 local function decorateTile(tile: Part, tileColor: Color3)
-	local tileSize = Config.Arena.tileSize
+	local tileSize = tile.Size.X -- already scaled for shrinking rounds
 	if glossTexture then
 		for _, face in SIDE_FACES do
 			local gloss = Instance.new("Texture")
@@ -117,8 +117,14 @@ function ArenaService.cleanup()
 	print(string.format("[Arena] Cleaned up, %d tiles left", #folder:GetChildren()))
 end
 
--- Replaces the grid with a fresh shuffled one using the given colors.
-function ArenaService.build(colorIds: { ColorId }, guarantee: ArenaLayout.Guarantee?)
+-- Replaces the grid with a fresh shuffled one using the given colors. `tileScale` (default 1)
+-- shrinks each tile within its grid cell, leaving gaps (D-10); tile centres do not move.
+function ArenaService.build(
+	colorIds: { ColorId },
+	guarantee: ArenaLayout.Guarantee?,
+	tileScale: number?
+)
+	local scale = tileScale or 1
 	ArenaService.cleanup()
 
 	local gridSize = Config.Arena.gridSize
@@ -139,7 +145,7 @@ function ArenaService.build(colorIds: { ColorId }, guarantee: ArenaLayout.Guaran
 			tile.Anchored = true
 			tile.Material = Enum.Material.SmoothPlastic
 			tile.Reflectance = TILE_LOOK.reflectance
-			tile.Size = Vector3.new(tileSize, Config.Arena.tileHeight, tileSize)
+			tile.Size = Vector3.new(tileSize * scale, Config.Arena.tileHeight, tileSize * scale)
 			tile.Position = Vector3.new(
 				origin[1] + (col - 1 - centerOffset) * tileSize,
 				origin[2],

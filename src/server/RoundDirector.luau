@@ -38,6 +38,19 @@ function RoundDirector.getMinTargetTiles(survivors: number, playersPerTile: numb
 	return math.max(1, math.ceil(survivors / playersPerTile))
 end
 
+-- Tile width as a fraction of full size for `round` (D-10): 1 before shrink.fromRound, then
+-- step smaller each round, never below shrink.minScale.
+function RoundDirector.getTileScale(
+	shrink: { fromRound: number, step: number, minScale: number },
+	round: number
+): number
+	if round < shrink.fromRound then
+		return 1
+	end
+	local shrunk = 1 - shrink.step * (round - shrink.fromRound + 1)
+	return math.max(shrink.minScale, shrunk)
+end
+
 -- Picks this round's colors and target and returns every parameter the round needs.
 function RoundDirector.getRoundParams(
 	config: Types.ConfigType,
@@ -73,6 +86,7 @@ function RoundDirector.getRoundParams(
 			config.Fairness.playersPerTargetTile
 		),
 		revealSeconds = row.revealSeconds,
+		tileScale = RoundDirector.getTileScale(config.Shrink, round),
 	}
 end
 
