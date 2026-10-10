@@ -167,6 +167,7 @@ local Config: Types.ConfigType = {
 		timerFillRgb = { 255, 255, 255 },
 		warningRgb = { 255, 72, 72 },
 		hiddenText = "?", -- target name and icon while the target is secret
+		untintedRgb = { 255, 255, 255 }, -- image tint that leaves art as drawn
 		-- Below this many seconds the timer shows tenths, above it whole seconds.
 		decimalBelowSeconds = 10,
 		-- A shared win names at most this many players, then "and N more", so the line fits.
@@ -185,6 +186,16 @@ local Config: Types.ConfigType = {
 				circle = 127674839088791,
 				square = 83189910136901,
 				diamond = 101425829907806,
+			},
+			-- The artist's tile art (A-01): a colored rounded square with the white shape on it.
+			-- Drawn on top of each arena tile and on the HUD target card.
+			shapeTile = {
+				heart = 76075417223764,
+				triangle = 99013340642351,
+				star = 126829176555251,
+				circle = 139221210873915,
+				square = 81677246211262,
+				diamond = 86763642426459,
 			},
 			crown = 81195306124170, -- A-04, round badge
 			player = 139725380431484, -- A-05, players left

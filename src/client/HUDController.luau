@@ -108,9 +108,22 @@ local function makeText(name: string, parent: Instance, font: Enum.Font): TextLa
 	return label
 end
 
--- A square icon slot on the left of a panel: the image, or `fallback` text if the image is
--- not uploaded or does not load.
-type Icon = { slot: Frame, image: ImageLabel, fallback: TextLabel, failed: boolean }
+-- One image an icon can show, tinted with `tint` (UNTINTED leaves the art as drawn).
+type IconChoice = { id: number, tint: Color3 }
+
+-- A square icon slot on the left of a panel. It shows the first of its choices that has an ID
+-- and has not failed to load, or the fallback text when none is left.
+type Icon = {
+	slot: Frame,
+	image: ImageLabel,
+	fallback: TextLabel,
+	choices: { IconChoice },
+	fallbackText: string,
+	failedUrls: { [string]: boolean },
+	failed: boolean, -- showing the fallback text
+}
+
+local UNTINTED = toColor3(HUD.untintedRgb)
 
 local function makeIcon(parent: Instance, widthScale: number): Icon
 	local slot = Instance.new("Frame")
@@ -133,36 +146,63 @@ local function makeIcon(parent: Instance, widthScale: number): Icon
 	local fallback = makeText("Fallback", slot, HEADING_FONT)
 	fallback.ZIndex = 3
 	fallback.Visible = false
-	return { slot = slot, image = image, fallback = fallback, failed = false }
+	return {
+		slot = slot,
+		image = image,
+		fallback = fallback,
+		choices = {},
+		fallbackText = "",
+		failedUrls = {},
+		failed = false,
+	}
 end
 
--- Points `icon` at asset `id`. Shows the fallback text right away for an ID of 0, or later if
--- the asset fails to load.
-local function setIcon(icon: Icon, id: number, fallbackText: string)
-	icon.fallback.Text = fallbackText
-	if id == 0 then
-		icon.failed = true
-	else
-		local url = assetUrl(id)
-		if icon.image.Image ~= url then
-			icon.image.Image = url
+-- Shows the icon's first usable choice. A choice that fails to load is marked failed, and the
+-- icon moves on to the next one.
+local function showIcon(icon: Icon)
+	for _, choice in icon.choices do
+		local url = if choice.id ~= 0 then assetUrl(choice.id) else nil
+		if url and not icon.failedUrls[url] then
 			icon.failed = false
-			task.spawn(function()
-				ContentProvider:PreloadAsync({ icon.image }, function(_, status)
-					if status ~= Enum.AssetFetchStatus.Success and icon.image.Image == url then
-						icon.failed = true
-						icon.image.Visible = false
-						icon.fallback.Visible = true
-						warn(
-							string.format("[HUD] Image %s did not load (%s)", url, tostring(status))
-						)
-					end
+			icon.image.ImageColor3 = choice.tint
+			if icon.image.Image ~= url then
+				icon.image.Image = url
+				-- Preload the ImageLabel itself: preloading the bare asset ID string reported
+				-- failures for images that load fine (seen in Studio QA).
+				task.spawn(function()
+					ContentProvider:PreloadAsync({ icon.image }, function(contentId, status)
+						local failedNow = status ~= Enum.AssetFetchStatus.Success
+							and contentId == url
+							and not icon.failedUrls[url]
+						if failedNow then
+							icon.failedUrls[url] = true
+							warn(
+								string.format(
+									"[HUD] Image %s did not load (%s)",
+									url,
+									tostring(status)
+								)
+							)
+							showIcon(icon)
+						end
+					end)
 				end)
-			end)
+			end
+			icon.image.Visible = true
+			icon.fallback.Visible = false
+			return
 		end
 	end
-	icon.image.Visible = not icon.failed
-	icon.fallback.Visible = icon.failed
+	icon.failed = true
+	icon.fallback.Text = icon.fallbackText
+	icon.image.Visible = false
+	icon.fallback.Visible = true
+end
+
+local function setIcon(icon: Icon, choices: { IconChoice }, fallbackText: string)
+	icon.choices = choices
+	icon.fallbackText = fallbackText
+	showIcon(icon)
 end
 
 -- A panel with an icon on the left and a body filling the rest, holding a text label.
@@ -234,7 +274,7 @@ local function buildGui(): Widgets
 		screenGui
 	)
 	-- The badge text already says "Round", so a missing crown needs no stand-in.
-	setIcon(roundIcon, Config.Assets.Images.crown, "")
+	setIcon(roundIcon, { { id = Config.Assets.Images.crown, tint = UNTINTED } }, "")
 
 	local playersPanel, playersIcon, _, playersText = makeBadge(
 		"PlayersBadge",
@@ -243,10 +283,11 @@ local function buildGui(): Widgets
 		UDim2.fromScale(0.5 + cardHalf + HUD.gap, margin),
 		screenGui
 	)
-	setIcon(playersIcon, Config.Assets.Images.player, "Left")
+	setIcon(playersIcon, { { id = Config.Assets.Images.player, tint = UNTINTED } }, "Left")
 
-	-- Target card: the shape icon tinted with the target color, then the color name. If the
-	-- icon is missing, a swatch of the color with the shape name stands in for it.
+	-- Target card: the target's tile art (as drawn on the arena), then the color name. If the
+	-- tile art is missing it falls back to the white shape icon tinted with the color, then to
+	-- a swatch of the color with the shape name.
 	local targetPanel, targetIcon, _, targetName = makeBadge(
 		"TargetCard",
 		HUD.targetCardSize,
@@ -275,7 +316,7 @@ local function buildGui(): Widgets
 		UDim2.fromScale(0.5, 1 - HUD.timerBottom),
 		screenGui
 	)
-	setIcon(timerIcon, Config.Assets.Images.stopwatch, "")
+	setIcon(timerIcon, { { id = Config.Assets.Images.stopwatch, tint = UNTINTED } }, "")
 	local track = Instance.new("Frame")
 	track.Name = "Track"
 	track.BackgroundColor3 = toColor3(HUD.timerTrackRgb)
@@ -336,8 +377,11 @@ local function drawTarget(w: Widgets, card: HudModel.TargetCard?)
 	end
 	local color = hexColor(card.hex)
 	local shape: ShapeId = card.shape
-	setIcon(icon, Config.Assets.Images.shapeIcon[shape], shape)
-	icon.image.ImageColor3 = color
+	local images = Config.Assets.Images
+	setIcon(icon, {
+		{ id = images.shapeTile[shape], tint = UNTINTED },
+		{ id = images.shapeIcon[shape], tint = color },
+	}, shape)
 	w.targetSwatch.BackgroundColor3 = color
 	w.targetSwatch.Visible = icon.failed
 end

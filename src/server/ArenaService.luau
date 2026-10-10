@@ -13,6 +13,7 @@ type ColorId = Types.ColorId
 local ARENA_FOLDER_NAME = "Arena"
 local TILES_FOLDER_NAME = "Tiles"
 local COLOR_ATTRIBUTE = "ColorId"
+local MARKER_NAME = "ShapeMarker"
 
 local ArenaService = {}
 
@@ -23,6 +24,18 @@ local tileColorById: { [ColorId]: Color3 } = {}
 for _, colorDef in Config.Colors do
 	local rgb = Util.hexToRgb(colorDef.hex)
 	tileColorById[colorDef.id] = Color3.fromRGB(rgb[1], rgb[2], rgb[3])
+end
+
+-- Tile art for each palette id (D-03b): the shape drawn on the tile's top face, so players can
+-- tell tiles apart without relying on color. A color with no art yet keeps a plain tile.
+local tileTextureById: { [ColorId]: string } = {}
+for _, colorDef in Config.Colors do
+	local imageId = Util.getTileImageId(Config.Colors, Config.Assets.Images.shapeTile, colorDef.id)
+	if imageId then
+		tileTextureById[colorDef.id] = "rbxassetid://" .. tostring(imageId)
+	else
+		warn(string.format("[Arena] No tile art for %s, its tiles show color only", colorDef.name))
+	end
 end
 
 local function getFolder(parent: Instance, name: string): Instance
@@ -92,6 +105,15 @@ function ArenaService.build(colorIds: { ColorId }, guarantee: ArenaLayout.Guaran
 			)
 			tile.Color = tileColor
 			tile:SetAttribute(COLOR_ATTRIBUTE, colorId)
+
+			local texture = tileTextureById[colorId]
+			if texture then
+				local marker = Instance.new("Decal")
+				marker.Name = MARKER_NAME
+				marker.Face = Enum.NormalId.Top
+				marker.Texture = texture
+				marker.Parent = tile
+			end
 			tile.Parent = folder
 		end
 	end
