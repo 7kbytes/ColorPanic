@@ -19,6 +19,7 @@ local NAMES = {
 	"LobbyInfo",
 	"RequestPlay",
 	"RequestLeave",
+	"PlayerDataUpdated",
 }
 
 -- A server to client channel. fireAll and fireTo run on the server only,
@@ -93,6 +94,8 @@ Remotes.PlayerEliminated =
 	serverToClient("PlayerEliminated") :: ServerToClient<Types.PlayerEliminatedPayload>
 Remotes.MatchResult = serverToClient("MatchResult") :: ServerToClient<Types.MatchResultPayload>
 Remotes.LobbyInfo = serverToClient("LobbyInfo") :: ServerToClient<Types.LobbyInfoPayload>
+Remotes.PlayerDataUpdated =
+	serverToClient("PlayerDataUpdated") :: ServerToClient<Types.PlayerDataPayload>
 
 -- Creates the Remotes folder and every RemoteEvent. Call once at server startup,
 -- before any service fires. Safe to call again.

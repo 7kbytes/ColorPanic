@@ -11,6 +11,7 @@ local Types = require(ReplicatedStorage.Shared.Types)
 local Util = require(ReplicatedStorage.Shared.Util)
 local ArenaService = require(script.Parent.ArenaService)
 local Broadcast = require(script.Parent.Broadcast)
+local DataService = require(script.Parent.DataService)
 local EliminationRules = require(script.Parent.EliminationRules)
 local EliminationService = require(script.Parent.EliminationService)
 local MatchFlow = require(script.Parent.MatchFlow)
@@ -129,9 +130,12 @@ local function startMatch()
 	table.clear(spectators)
 	table.clear(outs)
 	resetRoundFlags()
+	local participants: { Player } = {}
 	for player in queued do
 		survivors[player] = true
+		table.insert(participants, player)
 	end
+	DataService.recordMatchPlayed(participants)
 end
 
 local function endMatch()
@@ -266,8 +270,12 @@ local function onEnter(previous: MatchState, nextState: MatchState)
 		end
 	elseif nextState == "RoundEnd" then
 		resolveRoundEnd()
+		if not isReplay and not replayPending then
+			DataService.awardRoundSurvivors(getSurvivorList())
+		end
 	elseif nextState == "Victory" then
 		local winners = getSurvivorList()
+		DataService.awardMatchWinners(winners)
 		table.sort(winners, function(a, b)
 			return a.DisplayName < b.DisplayName
 		end)

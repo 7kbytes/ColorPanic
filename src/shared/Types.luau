@@ -309,6 +309,24 @@ export type ConfigType = {
 		shorterFromRound: number,
 	},
 	Difficulty: { DifficultyRow },
+	Data: {
+		dataStoreKey: string,
+		autoSaveSeconds: number,
+		maxRetries: number,
+		retryDelaySeconds: number,
+	},
+	Rewards: {
+		coinsPerRound: number,
+		coinsPerWin: number,
+	},
+}
+
+-- Player profile schema for DataStore persistence and local stats display.
+export type PlayerProfile = {
+	wins: number,
+	roundsSurvived: number,
+	matchesPlayed: number,
+	coins: number,
 }
 
 -- Remote payloads, server to client. endsAt is a server timestamp from
@@ -373,6 +391,10 @@ export type MatchResultPayload = {
 	winnerNames: { string },
 	standings: { Standing }, -- best first
 	rounds: number, -- rounds played in the match
+}
+
+export type PlayerDataPayload = {
+	profile: PlayerProfile,
 }
 
 return {}
