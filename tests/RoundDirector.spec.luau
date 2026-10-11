@@ -73,14 +73,15 @@ end)
 
 describe("RoundDirector fairness rule", function()
 	-- One target tile per two survivors, rounded up, never fewer than one.
-	local expected = { [0] = 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6 }
+	-- expected[survivors + 1] is the minimum for that many survivors (0 to 12).
+	local expected = { 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6 }
 	for survivors = 0, 12 do
 		it(
-			string.format("%d survivors need %d target tiles", survivors, expected[survivors]),
+			string.format("%d survivors need %d target tiles", survivors, expected[survivors + 1]),
 			function()
 				local actual =
 					RoundDirector.getMinTargetTiles(survivors, Config.Fairness.playersPerTargetTile)
-				expect(actual).toBe(expected[survivors])
+				expect(actual).toBe(expected[survivors + 1])
 			end
 		)
 	end
