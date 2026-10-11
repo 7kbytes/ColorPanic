@@ -436,6 +436,12 @@ local Config: Types.ConfigType = {
 	},
 
 	-- Loading screen (A-01). Runs from ReplicatedFirst, before anything else the client does.
+	Settings = {
+		stepPercent = 10, -- how much one press of plus or minus moves a volume
+		requestCooldown = 0.25, -- seconds between settings requests from one player
+		title = "SETTINGS",
+	},
+
 	Loading = {
 		minSeconds = 10, -- keep it up at least this long so it cannot flash on and off
 		fadeSeconds = 0.6,
@@ -504,6 +510,9 @@ local Config: Types.ConfigType = {
 		dailyNextRgb = { 255, 214, 51 }, -- the day that claiming now would take
 		dailyClaimRgb = { 60, 170, 70 },
 		leaderboardRowHeight = 0.075, -- fraction of the panel, per row
+		-- The Settings panel (A-07).
+		settingsPanelSize = { 0.4, 0.46 },
+		settingsStepRgb = { 70, 90, 140 },
 		howToSize = { 0.46, 0.58 },
 		howToCorner = { 0.97, 0.96 }, -- bottom right corner of the card
 		buttonRgb = { 60, 190, 90 },

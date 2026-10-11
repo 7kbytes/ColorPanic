@@ -10,6 +10,7 @@ local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local LeaderboardRules = require(ReplicatedStorage.Shared.LeaderboardRules)
+local SettingsRules = require(ReplicatedStorage.Shared.SettingsRules)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
 local HUDController = require(script.Parent.HUDController)
@@ -124,6 +125,107 @@ local function makeSoonArtTile(
 	soon.Size = UDim2.fromScale(1, 0.32)
 	soon.Text = "Coming soon"
 	return tile
+end
+
+-- The settings panel (A-07): music and effects volume.
+--
+-- Pressing a step changes what this client hears straight away, so the button feels
+-- instant, and sends the new values to the server to be saved. The server clamps them and
+-- answers with the profile, which is what the panel then shows: the client never decides
+-- what is stored.
+local function makeSettingsPanel(parent: Instance): (Frame, (Types.PlayerProfile) -> ())
+	local menu = Config.Menu
+	local settings = Config.Settings
+	local panel = UiStyle.makePanel(
+		"Settings",
+		menu.settingsPanelSize,
+		Vector2.new(0.5, 0.5),
+		UDim2.fromScale(0.5, 0.5)
+	)
+	panel.Visible = false
+	panel.Parent = parent
+
+	local title = UiStyle.makeText("Title", panel, UiStyle.HEADING_FONT)
+	title.Size = UDim2.fromScale(1, 0.16)
+	title.Text = settings.title
+
+	-- What this client currently believes, applied locally and sent to the server. It is
+	-- replaced by whatever the server confirms.
+	local music = 100
+	local sfx = 100
+
+	local function apply()
+		Sfx.setScales(SettingsRules.scale(music), SettingsRules.scale(sfx))
+	end
+
+	local function send()
+		Remotes.RequestSettings.fire({ music = music, sfx = sfx })
+	end
+
+	-- One row: a name, minus, the value, plus.
+	local function makeRow(name: string, y: number, get: () -> number, set: (number) -> ())
+		local label = UiStyle.makeText(name .. "Label", panel, UiStyle.BODY_FONT)
+		label.Position = UDim2.fromScale(0.05, y)
+		label.Size = UDim2.fromScale(0.35, 0.14)
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.Text = name
+
+		local value = UiStyle.makeText(name .. "Value", panel, UiStyle.BODY_FONT)
+		value.Position = UDim2.fromScale(0.58, y)
+		value.Size = UDim2.fromScale(0.2, 0.14)
+
+		local function refresh()
+			value.Text = SettingsRules.label(get())
+		end
+
+		local function makeStep(text: string, x: number, delta: number)
+			local button = UiStyle.makeButton(name .. text, text, menu.settingsStepRgb)
+			button.Position = UDim2.fromScale(x, y)
+			button.Size = UDim2.fromScale(0.14, 0.14)
+			button.Parent = panel
+			button.Activated:Connect(function()
+				set(SettingsRules.step(get(), delta, settings.stepPercent))
+				refresh()
+				apply()
+				send()
+			end)
+		end
+		makeStep("-", 0.42, -1)
+		makeStep("+", 0.8, 1)
+		return refresh
+	end
+
+	local refreshMusic = makeRow("Music", 0.26, function()
+		return music
+	end, function(v)
+		music = v
+	end)
+	local refreshSfx = makeRow("Effects", 0.46, function()
+		return sfx
+	end, function(v)
+		sfx = v
+	end)
+
+	local close = UiStyle.makeButton("Close", "Close", menu.leaderboardRgb)
+	close.AnchorPoint = Vector2.new(0.5, 1)
+	close.Position = UDim2.fromScale(0.5, 1)
+	close.Size = UDim2.fromScale(0.4, 0.15)
+	close.Parent = panel
+	close.Activated:Connect(function()
+		panel.Visible = false
+	end)
+
+	-- The server's copy wins. This also runs on join, which is how saved settings come
+	-- back and get applied before the player touches anything.
+	local function update(profile: Types.PlayerProfile)
+		music = SettingsRules.clampPercent(profile.musicPercent)
+		sfx = SettingsRules.clampPercent(profile.sfxPercent)
+		refreshMusic()
+		refreshSfx()
+		apply()
+	end
+
+	return panel, update
 end
 
 -- The daily rewards panel (A-08), opened from the menu's Daily Rewards tile.
@@ -420,9 +522,15 @@ local function buildGui(): Gui
 	play.Parent = panel
 	local assets = Config.Assets.Images
 	local aspect = menu.tileAspect
-	local settings =
-		makeSoonArtTile("Settings", assets.menuSettings, menu.settingsRgb, aspect.settings)
+	-- Shop is the only tile still waiting on a feature (A-07 wired Settings up).
 	local shop = makeSoonArtTile("Shop", assets.menuShop, menu.shopRgb, aspect.shop)
+	local settings = makeArtButton(
+		"Settings",
+		assets.menuSettings,
+		"Settings",
+		menu.settingsRgb,
+		aspect.settings
+	)
 	-- Unlike the two above, these work, so they are live buttons (A-05, A-08).
 	local leaderboard = makeArtButton(
 		"Leaderboard",
@@ -446,9 +554,10 @@ local function buildGui(): Gui
 
 	local leaderboardPanel, updateLeaderboard = makeLeaderboardPanel(panel)
 	local dailyPanel, updateDaily = makeDailyPanel(panel)
+	local settingsPanel, updateSettings = makeSettingsPanel(panel)
 	-- Only one panel at a time, so they cannot stack on top of each other.
 	local function openOnly(target: Frame)
-		for _, other in { leaderboardPanel, dailyPanel } do
+		for _, other in { leaderboardPanel, dailyPanel, settingsPanel } do
 			other.Visible = other == target and not target.Visible
 		end
 	end
@@ -458,8 +567,15 @@ local function buildGui(): Gui
 	dailyRewards.Activated:Connect(function()
 		openOnly(dailyPanel)
 	end)
+	settings.Activated:Connect(function()
+		openOnly(settingsPanel)
+	end)
 	Remotes.LeaderboardUpdated.connect(updateLeaderboard)
 	Remotes.DailyUpdated.connect(updateDaily)
+	-- Saved settings arrive with the profile, on join and after every change.
+	Remotes.PlayerDataUpdated.connect(function(payload)
+		updateSettings(payload.profile)
+	end)
 	-- The Play button's height follows its art, so the tiles are placed from its drawn size.
 	-- Each tile's height comes from its own art, so they are stacked by measuring rather
 	-- than by assuming a shared row height.

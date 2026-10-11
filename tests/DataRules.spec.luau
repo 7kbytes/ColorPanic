@@ -137,6 +137,8 @@ describe("DataRules.signature", function()
 		coins = 105,
 		lastClaimDay = 0,
 		streak = 0,
+		musicPercent = 100,
+		sfxPercent = 100,
 	}
 
 	it("is the same for the same values", function()
@@ -146,7 +148,16 @@ describe("DataRules.signature", function()
 	it("changes when any saved field changes", function()
 		local original = DataRules.signature(base)
 		for _, field in
-			{ "wins", "roundsSurvived", "matchesPlayed", "coins", "lastClaimDay", "streak" }
+			{
+				"wins",
+				"roundsSurvived",
+				"matchesPlayed",
+				"coins",
+				"lastClaimDay",
+				"streak",
+				"musicPercent",
+				"sfxPercent",
+			}
 		do
 			local changed = table.clone(base)
 			changed[field] += 1
@@ -171,6 +182,8 @@ describe("DataRules.copyInto", function()
 			coins = 250,
 			lastClaimDay = 19000,
 			streak = 3,
+			musicPercent = 40,
+			sfxPercent = 0,
 		}
 	end
 
@@ -194,6 +207,8 @@ describe("DataRules.copyInto", function()
 			coins = 99,
 			lastClaimDay = 99,
 			streak = 99,
+			musicPercent = 99,
+			sfxPercent = 99,
 		}
 		DataRules.copyInto(target, source())
 		expect(target.wins).toBe(4)

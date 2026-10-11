@@ -25,6 +25,42 @@ local Sfx = {}
 
 local sounds: { [Name]: Sound } = {}
 
+-- The two looping tracks. They are mixed at Config.Audio.musicVolume rather than the
+-- effects level, and the player can turn them down separately (A-07).
+local MUSIC: { [string]: boolean } = { lobbyMusic = true, matchMusic = true }
+
+-- The player's settings, as 0 to 1 multipliers on the Config mix. Both start at 1, so the
+-- game sounds the same as it always did until a profile says otherwise.
+local musicScale = 1
+local sfxScale = 1
+
+-- The volume a sound should play at, given the mix and the player's settings.
+local function volumeFor(name: Name): number
+	if MUSIC[name] then
+		return Config.Audio.musicVolume * musicScale
+	end
+	return Config.Audio.sfxVolume * sfxScale
+end
+
+Sfx.volumeFor = volumeFor
+
+-- True when this sound is one of the music tracks.
+function Sfx.isMusic(name: Name): boolean
+	return MUSIC[name] == true
+end
+
+-- Applies the player's settings, as 0 to 1 multipliers, to everything already loaded and
+-- to anything created later.
+function Sfx.setScales(music: number, sfx: number)
+	musicScale = math.clamp(music, 0, 1)
+	sfxScale = math.clamp(sfx, 0, 1)
+	for name: Name, sound in sounds do
+		-- Music that is mid crossfade is set here too. The fade's own target is read from
+		-- volumeFor, so the next fade lands on the new level either way.
+		sound.Volume = volumeFor(name)
+	end
+end
+
 -- The Sound for `name`, or nil when it has no asset ID.
 function Sfx.get(name: Name): Sound?
 	local existing = sounds[name]
@@ -38,7 +74,7 @@ function Sfx.get(name: Name): Sound?
 	local sound = Instance.new("Sound")
 	sound.Name = name
 	sound.SoundId = "rbxassetid://" .. tostring(id)
-	sound.Volume = Config.Audio.sfxVolume
+	sound.Volume = volumeFor(name)
 	sound.Parent = SoundService
 	sounds[name] = sound
 	-- Audio is private to its owner, so a missing permission shows up here as a failed load.

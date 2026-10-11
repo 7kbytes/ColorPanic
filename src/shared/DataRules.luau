@@ -2,6 +2,7 @@
 -- Pure rules for player profiles, rewards and progression.
 -- Kept pure so it can be tested outside Studio with Lune.
 
+local SettingsRules = require(script.Parent.SettingsRules)
 local Types = require(script.Parent.Types)
 
 type PlayerProfile = Types.PlayerProfile
@@ -17,6 +18,8 @@ function DataRules.defaultProfile(): PlayerProfile
 		coins = 0,
 		lastClaimDay = 0,
 		streak = 0,
+		musicPercent = 100,
+		sfxPercent = 100,
 	}
 end
 
@@ -42,6 +45,10 @@ function DataRules.sanitize(raw: any): PlayerProfile
 		coins = sanitizeInt(raw.coins, default.coins),
 		lastClaimDay = sanitizeInt(raw.lastClaimDay, default.lastClaimDay),
 		streak = sanitizeInt(raw.streak, default.streak),
+		-- Volumes are a percentage, so they are capped as well as floored. A stored 0 is
+		-- a deliberate mute and must survive loading.
+		musicPercent = SettingsRules.clampPercent(raw.musicPercent),
+		sfxPercent = SettingsRules.clampPercent(raw.sfxPercent),
 	}
 end
 
@@ -55,6 +62,8 @@ function DataRules.recordRoundSurvived(profile: PlayerProfile, coinsEarned: numb
 		coins = profile.coins + coins,
 		lastClaimDay = profile.lastClaimDay,
 		streak = profile.streak,
+		musicPercent = profile.musicPercent,
+		sfxPercent = profile.sfxPercent,
 	}
 end
 
@@ -68,6 +77,8 @@ function DataRules.recordMatchVictory(profile: PlayerProfile, coinsEarned: numbe
 		coins = profile.coins + coins,
 		lastClaimDay = profile.lastClaimDay,
 		streak = profile.streak,
+		musicPercent = profile.musicPercent,
+		sfxPercent = profile.sfxPercent,
 	}
 end
 
@@ -80,6 +91,8 @@ function DataRules.recordMatchPlayed(profile: PlayerProfile): PlayerProfile
 		coins = profile.coins,
 		lastClaimDay = profile.lastClaimDay,
 		streak = profile.streak,
+		musicPercent = profile.musicPercent,
+		sfxPercent = profile.sfxPercent,
 	}
 end
 
@@ -102,6 +115,8 @@ function DataRules.deductCoins(profile: PlayerProfile, amount: number): (boolean
 			coins = profile.coins - cost,
 			lastClaimDay = profile.lastClaimDay,
 			streak = profile.streak,
+			musicPercent = profile.musicPercent,
+			sfxPercent = profile.sfxPercent,
 		}
 end
 
@@ -118,6 +133,8 @@ function DataRules.copyInto(target: PlayerProfile, profile: PlayerProfile): Play
 	target.coins = profile.coins
 	target.lastClaimDay = profile.lastClaimDay
 	target.streak = profile.streak
+	target.musicPercent = profile.musicPercent
+	target.sfxPercent = profile.sfxPercent
 	return target
 end
 
@@ -128,13 +145,15 @@ end
 -- cheap way to compare two profiles in tests and in logs.
 function DataRules.signature(profile: PlayerProfile): string
 	return string.format(
-		"%d|%d|%d|%d|%d|%d",
+		"%d|%d|%d|%d|%d|%d|%d|%d",
 		profile.wins,
 		profile.roundsSurvived,
 		profile.matchesPlayed,
 		profile.coins,
 		profile.lastClaimDay,
-		profile.streak
+		profile.streak,
+		profile.musicPercent,
+		profile.sfxPercent
 	)
 end
 
