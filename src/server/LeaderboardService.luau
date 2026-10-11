@@ -19,6 +19,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local LeaderboardRules = require(ReplicatedStorage.Shared.LeaderboardRules)
+local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local Types = require(ReplicatedStorage.Shared.Types)
 
 type Entry = LeaderboardRules.Entry
 type Row = LeaderboardRules.Row
@@ -117,6 +119,15 @@ local function buildBoard(parent: Instance)
 	statusLabel = status
 end
 
+-- The last thing sent to clients, so a player who joins later sees the board straight away
+-- instead of waiting for the next refresh.
+local lastPayload: Types.LeaderboardPayload = { rows = {}, offline = true }
+
+local function broadcast(rows: { Row }, offline: boolean)
+	lastPayload = { rows = rows, offline = offline }
+	Remotes.LeaderboardUpdated.fireAll(lastPayload)
+end
+
 local function showStatus(message: string)
 	for _, row in rowLabels do
 		row.left.Text = ""
@@ -128,7 +139,15 @@ local function showStatus(message: string)
 	end
 end
 
+-- The store could not be reached. Clients are told as well, so the menu panel can say so
+-- rather than looking like nobody has ever won.
+local function showOffline()
+	broadcast({}, true)
+	showStatus(BOARD.offlineMessage)
+end
+
 local function showRows(rows: { Row })
+	broadcast(rows, false)
 	if #rows == 0 then
 		showStatus(BOARD.emptyMessage)
 		return
@@ -171,7 +190,7 @@ end
 local function refresh()
 	local activeStore = store
 	if not activeStore then
-		showStatus(BOARD.offlineMessage)
+		showOffline()
 		return
 	end
 
@@ -180,7 +199,7 @@ local function refresh()
 	end)
 	if not ok or not pages then
 		warn(string.format("[Leaderboard] could not read the top players: %s", tostring(pages)))
-		showStatus(BOARD.offlineMessage)
+		showOffline()
 		return
 	end
 
@@ -189,7 +208,7 @@ local function refresh()
 	end)
 	if not okPage or not page then
 		warn("[Leaderboard] the sorted page could not be read")
-		showStatus(BOARD.offlineMessage)
+		showOffline()
 		return
 	end
 
@@ -247,9 +266,15 @@ function LeaderboardService.start()
 		store = opened
 	else
 		warn(string.format("[Leaderboard] store unavailable (%s)", tostring(opened)))
-		showStatus(BOARD.offlineMessage)
+		showOffline()
 		return
 	end
+
+	-- A player who joins between refreshes gets what the board is showing now, rather than
+	-- an empty panel until the next one.
+	Players.PlayerAdded:Connect(function(player: Player)
+		Remotes.LeaderboardUpdated.fireTo(player, lastPayload)
+	end)
 
 	task.spawn(function()
 		while true do

@@ -394,7 +394,9 @@ local Config: Types.ConfigType = {
 		-- The board, placed relative to Config.Placement.lobbyOrigin. It faces the spawn
 		-- pad ring, so players see it when they arrive.
 		offset = { 0, 9, 24 },
-		yaw = 180, -- degrees, turned to face back across the island
+		-- Degrees. 0 points the board back across the island at the spawn pads. Roblox's
+		-- NormalId.Front is the part's -Z face, not +Z, which is why this is not 180.
+		yaw = 0,
 		size = { 22, 14 }, -- studs, width and height
 		thickness = 0.6,
 		backdropRgb = { 20, 20, 40 },
@@ -467,6 +469,12 @@ local Config: Types.ConfigType = {
 		soonTransparency = 0.35, -- greyed: not wired yet
 		settingsRgb = { 40, 120, 230 },
 		shopRgb = { 130, 70, 210 },
+		-- The Leaderboard tile (A-05). Unlike Settings and Shop it is wired up, so it is
+		-- drawn at full strength rather than greyed.
+		leaderboardRgb = { 230, 140, 30 },
+		-- The panel it opens, over the menu.
+		leaderboardPanelSize = { 0.44, 0.62 },
+		leaderboardRowHeight = 0.075, -- fraction of the panel, per row
 		howToSize = { 0.46, 0.58 },
 		howToCorner = { 0.97, 0.96 }, -- bottom right corner of the card
 		buttonRgb = { 60, 190, 90 },

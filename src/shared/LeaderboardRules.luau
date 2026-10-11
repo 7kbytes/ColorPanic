@@ -75,6 +75,25 @@ function LeaderboardRules.rowText(row: Row, maxNameLength: number): (string, str
 	return left, tostring(row.wins)
 end
 
+-- The message to show instead of rows, or nil when there are rows to show.
+--
+-- "Nobody has won yet" and "we could not reach the store" look the same on an empty board
+-- and mean completely different things, so they are told apart here.
+function LeaderboardRules.statusMessage(
+	offline: boolean,
+	rowCount: number,
+	offlineText: string,
+	emptyText: string
+): string?
+	if offline then
+		return offlineText
+	end
+	if rowCount == 0 then
+		return emptyText
+	end
+	return nil
+end
+
 -- Whether a player's new win total is worth writing.
 --
 -- The store only holds a player's best total, and wins only ever go up, so a write is
