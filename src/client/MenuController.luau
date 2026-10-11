@@ -106,24 +106,22 @@ local function makeArtButton(
 	return button
 end
 
--- A greyed tile for a feature that is not built yet (D-09): a label and "Coming soon". Not a
--- button, so nothing can be pressed.
-local function makeSoonTile(name: string, rgb: { number }): Frame
-	local tile = Instance.new("Frame")
-	tile.Name = name
-	tile.BackgroundColor3 = toColor3(rgb)
-	tile.BackgroundTransparency = Config.Menu.soonTransparency
-	tile.BorderSizePixel = 0
-	UiStyle.addCorner(tile)
-	UiStyle.addPadding(tile)
-	UiStyle.addPanelStroke(tile)
-	local label = UiStyle.makeText("Label", tile, UiStyle.HEADING_FONT)
-	label.Size = UDim2.fromScale(0.6, 1)
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.Text = name
+-- A tile that shows its art but is not wired up yet (D-09, A-06). Dimmed and marked
+-- "Coming soon", and not clickable, so it cannot promise something that does nothing.
+local function makeSoonArtTile(
+	name: string,
+	id: number,
+	rgb: { number },
+	aspect: number
+): ImageButton
+	local tile = makeArtButton(name, id, name, rgb, aspect)
+	tile.Active = false
+	tile.AutoButtonColor = false
+	tile.ImageTransparency = Config.Menu.soonTransparency
 	local soon = UiStyle.makeText("Soon", tile, UiStyle.BODY_FONT)
-	soon.Position = UDim2.fromScale(0.6, 0.15)
-	soon.Size = UDim2.fromScale(0.4, 0.7)
+	soon.AnchorPoint = Vector2.new(0.5, 1)
+	soon.Position = UDim2.fromScale(0.5, 1)
+	soon.Size = UDim2.fromScale(1, 0.32)
 	soon.Text = "Coming soon"
 	return tile
 end
@@ -420,15 +418,29 @@ local function buildGui(): Gui
 	play.Position = UDim2.fromScale(menu.buttonsX, menu.playY)
 	play.Size = UDim2.fromScale(menu.playWidth, 1)
 	play.Parent = panel
-	local settings = makeSoonTile("Settings", menu.settingsRgb)
-	local shop = makeSoonTile("Shop", menu.shopRgb)
-	-- Unlike the two above, these work, so they are buttons at full strength (A-05, A-08).
-	local leaderboard = UiStyle.makeButton("Leaderboard", "Leaderboard", menu.leaderboardRgb)
-	local dailyRewards = UiStyle.makeButton("DailyRewards", "Daily Rewards", menu.dailyRgb)
-	-- Frames for the two greyed tiles and TextButtons for the working ones, so the list is
-	-- typed by what they have in common.
-	for _, tile in { settings, shop, leaderboard, dailyRewards } :: { GuiObject } do
-		tile.Size = UDim2.fromScale(menu.soonSize[1], menu.soonSize[2])
+	local assets = Config.Assets.Images
+	local aspect = menu.tileAspect
+	local settings =
+		makeSoonArtTile("Settings", assets.menuSettings, menu.settingsRgb, aspect.settings)
+	local shop = makeSoonArtTile("Shop", assets.menuShop, menu.shopRgb, aspect.shop)
+	-- Unlike the two above, these work, so they are live buttons (A-05, A-08).
+	local leaderboard = makeArtButton(
+		"Leaderboard",
+		assets.menuLeaderboard,
+		"Leaderboard",
+		menu.leaderboardRgb,
+		aspect.leaderboard
+	)
+	local dailyRewards = makeArtButton(
+		"DailyRewards",
+		assets.menuDailyRewards,
+		"Daily Rewards",
+		menu.dailyRgb,
+		aspect.dailyRewards
+	)
+	-- The width is set here; each tile's height comes from its art's aspect ratio.
+	for _, tile in { settings, shop, leaderboard, dailyRewards } do
+		tile.Size = UDim2.fromScale(menu.soonSize[1], 1)
 		tile.Parent = panel
 	end
 
@@ -449,19 +461,25 @@ local function buildGui(): Gui
 	Remotes.LeaderboardUpdated.connect(updateLeaderboard)
 	Remotes.DailyUpdated.connect(updateDaily)
 	-- The Play button's height follows its art, so the tiles are placed from its drawn size.
+	-- Each tile's height comes from its own art, so they are stacked by measuring rather
+	-- than by assuming a shared row height.
+	local column = { dailyRewards, leaderboard, shop, settings }
 	local function placeTiles()
 		local panelHeight = panel.AbsoluteSize.Y
-		local playHeight = if panelHeight > 0 then play.AbsoluteSize.Y / panelHeight else 0
-		local top = menu.playY + playHeight + menu.soonGap
-		settings.Position = UDim2.fromScale(menu.buttonsX, top)
-		shop.Position = UDim2.fromScale(menu.buttonsX, top + menu.soonSize[2] + menu.soonGap)
-		leaderboard.Position =
-			UDim2.fromScale(menu.buttonsX, top + (menu.soonSize[2] + menu.soonGap) * 2)
-		dailyRewards.Position =
-			UDim2.fromScale(menu.buttonsX, top + (menu.soonSize[2] + menu.soonGap) * 3)
+		if panelHeight <= 0 then
+			return -- not laid out yet; this runs again when the panel gets a size
+		end
+		local y = menu.playY + play.AbsoluteSize.Y / panelHeight + menu.soonGap
+		for _, tile in column do
+			tile.Position = UDim2.fromScale(menu.buttonsX, y)
+			y += tile.AbsoluteSize.Y / panelHeight + menu.soonGap
+		end
 	end
 	play:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeTiles)
 	panel:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeTiles)
+	for _, tile in column do
+		tile:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeTiles)
+	end
 
 	makeHowToCard(panel)
 

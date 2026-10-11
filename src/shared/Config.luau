@@ -352,6 +352,11 @@ local Config: Types.ConfigType = {
 			},
 			leave = 131161271982260, -- A-09, red "Back" button art used for Leave
 			play = 76866923563733, -- A-09, green Play button art
+			-- Menu tile art (A-06). Same pill shape as Play and Leave.
+			menuDailyRewards = 129525139874513,
+			menuLeaderboard = 96446626959507,
+			menuShop = 130683463968037,
+			menuSettings = 87582081258989,
 			logo = 107467392816535, -- A-03, title screen logo
 			-- A-01, loading screen key art. The screen still falls back to the backdrop
 			-- colour and the logo if this is 0. Image ID, not the Decal ID.
@@ -474,7 +479,15 @@ local Config: Types.ConfigType = {
 		playY = 0.38, -- top of the Play button
 		playWidth = 0.27, -- the height follows the art
 		playAspect = 512 / 192, -- width / height of the Play button art
-		soonSize = { 0.22, 0.1 }, -- the Settings and Shop tiles
+		soonSize = { 0.22, 0.1 }, -- menu tile width; the height follows the art's aspect
+		-- Width divided by height for each tile's art (A-06), so the tiles keep their
+		-- shape at any screen size.
+		tileAspect = {
+			dailyRewards = 2.44,
+			leaderboard = 2.88,
+			shop = 2.28,
+			settings = 2.64,
+		},
 		soonGap = 0.025, -- vertical gap between the buttons
 		soonTransparency = 0.35, -- greyed: not wired yet
 		settingsRgb = { 40, 120, 230 },
