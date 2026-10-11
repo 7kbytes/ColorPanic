@@ -115,3 +115,6 @@ does not spend the time this one did working it out.
   `Config.Match.studioSinglePlayerEnabled` set locally, and it will not exercise elimination
   with several survivors. Leaked tiles are likeliest there, so a 2 client pass is still worth
   doing by hand.
+- At the time of this attempt the bridge worked and `get_studio_state` answered
+  `Place is not open`, so the place has to be open in the attached instance as well. Studio
+  being up and synced by Rojo is not enough on its own.
