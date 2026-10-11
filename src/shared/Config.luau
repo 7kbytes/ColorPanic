@@ -109,7 +109,7 @@ local Config: Types.ConfigType = {
 	-- the floor and would sink through the baseplate any lower.
 	Placement = {
 		lobbyOrigin = { 0, 45, 100 },
-		spectatorOrigin = { 0, 50, -60 },
+		spectatorOrigin = { 0, 50, -70 },
 		placeholderSpawnCount = 12,
 		placeholderColumns = 4,
 		spawnSpacing = 6, -- studs between placeholder spawns
