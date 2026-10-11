@@ -379,6 +379,30 @@ local Config: Types.ConfigType = {
 		},
 	},
 
+	-- All-time top players board in the lobby (A-04). Wins only: coins are earned every
+	-- round, so a coins board would mostly rank time played.
+	Leaderboard = {
+		storeKey = "ColorPanic_Wins_v1",
+		topCount = 10,
+		refreshSeconds = 60, -- one sorted read per server per minute
+		maxNameLength = 16, -- longer names are cut with an ellipsis
+		title = "TOP WINNERS",
+		emptyMessage = "No winners yet. Be the first!",
+		-- Shown when the DataStore cannot be reached, which is the normal case in Studio
+		-- without API Services. The game plays on either way.
+		offlineMessage = "Leaderboard unavailable",
+		-- The board, placed relative to Config.Placement.lobbyOrigin. It faces the spawn
+		-- pad ring, so players see it when they arrive.
+		offset = { 0, 9, 24 },
+		yaw = 180, -- degrees, turned to face back across the island
+		size = { 22, 14 }, -- studs, width and height
+		thickness = 0.6,
+		backdropRgb = { 20, 20, 40 },
+		backdropTransparency = 0.15,
+		titleRgb = { 255, 214, 51 },
+		textRgb = { 255, 255, 255 },
+	},
+
 	-- Which scenery props stop a player, and the collider that does it (A-03).
 	--
 	-- A prop that is not listed here stays walk-through. RocksAndFlowers is left out on
