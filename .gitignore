@@ -15,3 +15,6 @@ sourcemap.json
 # 3D models are source files, not build output
 !models/*.rbxm
 !models/*.rbxmx
+
+# Python bytecode (tools/blender)
+__pycache__/

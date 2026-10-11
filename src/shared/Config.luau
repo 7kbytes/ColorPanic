@@ -102,11 +102,13 @@ local Config: Types.ConfigType = {
 		Reset = 2,
 	},
 
-	-- Placeholder lobby and spectator areas, used until the builder delivers real ones (slice 2).
-	-- Origins are the centre of each platform's top surface. The arena spans z -30 to 30 at
-	-- height 40, so the spectator platform sits beside it and above it.
+	-- Lobby and spectator areas. models/Lobby.rbxm is built around lobbyOrigin; the spectator
+	-- area is still a placeholder (slice 2). Origins are the centre of each platform's top
+	-- surface. The arena spans z -30 to 30 at height 40, so the spectator platform sits beside
+	-- it and above it. The lobby floats at about arena height: its island hangs 40 studs below
+	-- the floor and would sink through the baseplate any lower.
 	Placement = {
-		lobbyOrigin = { 0, 1, 100 },
+		lobbyOrigin = { 0, 45, 100 },
 		spectatorOrigin = { 0, 50, -60 },
 		placeholderSpawnCount = 12,
 		placeholderColumns = 4,
