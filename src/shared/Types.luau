@@ -51,6 +51,17 @@ export type RoundParams = {
 	tileScale: number, -- tile width as a fraction of the grid cell (D-10); 1 is full size
 }
 
+-- How one scenery prop stops a player (Config.Props). "box" fills the prop's footprint
+-- less `inset`, "cylinder" is an upright post of `radius` on its centre line, and "posts"
+-- is one box down each side, leaving the middle open to walk through.
+export type PropRule = {
+	kind: "box" | "cylinder" | "posts",
+	radius: number,
+	postWidth: number,
+	postDepth: number,
+	inset: number,
+}
+
 export type ConfigType = {
 	activePreset: string, -- "normal" or "demo"; see the presets in Config
 	Colors: { ColorDef },
@@ -267,6 +278,7 @@ export type ConfigType = {
 			},
 		},
 	},
+	Props: { [string]: PropRule },
 	Loading: {
 		minSeconds: number,
 		fadeSeconds: number,

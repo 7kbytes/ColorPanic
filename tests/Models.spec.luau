@@ -248,3 +248,64 @@ describe("models/ folder", function()
 		end)
 	end
 end)
+
+-- A-03 makes some scenery props solid at runtime (PropCollision), which the builder rules
+-- above cannot see: they read the model files, and these colliders are added in game. The
+-- rule they could break is the important one, that nothing collidable sits in or beside the
+-- tile square for a player to stand on, so it is checked here against the real models.
+describe("Props made solid at runtime stay clear of the arena", function()
+	local CollisionRules = Harness.requireModule("ReplicatedStorage.Shared.CollisionRules")
+
+	it("puts no collider in or beside the tile square", function()
+		local keepOut = ARENA.halfSize + LIMITS.rimGap
+		local floor = ARENA.tileTopY - LIMITS.fallClearance
+		local ceiling = ARENA.tileTopY + LIMITS.headroom
+
+		for _, file in fs.readDir(MODELS_DIR) do
+			if not string.match(file, "%.rbxmx?$") then
+				continue
+			end
+			local roots = roblox.deserializeModel(fs.readFile(MODELS_DIR .. "/" .. file))
+			for _, model in roots do
+				local visuals = model:FindFirstChild("Visuals")
+				if not visuals then
+					continue
+				end
+				for _, prop in visuals:GetChildren() do
+					local ok, size = pcall(function()
+						return prop.Size
+					end)
+					local okCf, cf = pcall(function()
+						return prop.CFrame
+					end)
+					if not (ok and okCf) then
+						continue
+					end
+					local colliders =
+						CollisionRules.collidersFor(prop.Name, size.X, size.Y, size.Z, Config.Props)
+					for _, collider in colliders do
+						local x = cf.Position.X + collider.offsetX
+						local z = cf.Position.Z + collider.offsetZ
+						local nearX = math.abs(x - ARENA.centerX) - collider.width / 2 < keepOut
+						local nearZ = math.abs(z - ARENA.centerZ) - collider.depth / 2 < keepOut
+						local top = cf.Position.Y + collider.height / 2
+						local bottom = cf.Position.Y - collider.height / 2
+						local inHeight = top > floor and bottom < ceiling
+						if nearX and nearZ and inHeight then
+							error(
+								string.format(
+									"%s in %s would put a collider at %.1f, %.1f, %.1f, inside the arena keep-out",
+									prop.Name,
+									file,
+									x,
+									cf.Position.Y,
+									z
+								)
+							)
+						end
+					end
+				end
+			end
+		end
+	end)
+end)
