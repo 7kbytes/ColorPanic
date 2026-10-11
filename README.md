@@ -117,6 +117,27 @@ Models live in `models/` as `.rbxm` or `.rbxmx` files. Rojo maps each file into 
 
 Roblox cannot report a mesh's triangles from a model file, so the asset prep step records each MeshPart's count in `art/models_manifest.json` (kept outside `models/`, which Rojo maps into Workspace), keyed by model name and then MeshPart name. A MeshPart missing from the manifest fails the check.
 
+### The models (slice 2)
+
+| File | What it is | Notes |
+| --- | --- | --- |
+| `models/Lobby.rbxm` | The floating lobby island at `Config.Placement.lobbyOrigin` (y 45): 12 spawn pads around a crowned platform, the entrance arch, palms, lamps, pillars, rocks | Meshes do not collide; an invisible floor, railings and platform do. Includes a SpawnLocation. |
+| `models/SpectatorArea.rbxm` | A smaller island beside the arena at `spectatorOrigin` (z -70) with 12 spawn pads | Same collision approach as the lobby |
+| `models/ArenaIsland.rbxm` | The island under the tile grid, 12 studs below the tiles | Collides, so players who fall land on it; they are still judged out |
+| `models/CloudSea.rbxm` | A white cloud floor over the baseplate and 10 cloud meshes | |
+
+The sky is code, not a model: `LookController` adds a Sky from `Config.Assets.Images.sky`.
+
+### Rebuilding a model
+
+1. **Prepare the meshes** (source art stays outside git): `tools/blender/prep_models.py` decimates each Meshy AI export to its triangle budget, bakes its texture onto new UVs, recolours green and exports an FBX in studs. Targets are in `art/lobby_models.json`. Run it with Blender 5.2 in background mode (usage at the top of the script).
+2. **Import** the FBX files with Studio's 3D Importer (Creator: the game owner, so the assets belong to the account that publishes the game).
+3. **Assemble** in a scratch place with the command bar scripts in `tools/studio/` (`assemble_lobby.luau`, `assemble_environment.luau`).
+4. **Save** each model with right click, Save to File, into `models/<Name>.rbxm`, and add its MeshParts' triangle counts to `art/models_manifest.json`.
+5. Run `bash scripts/test.sh`; the builder rules check the new file.
+
+If `rojo serve` is running while a model file is re-saved, Rojo can leave a duplicate copy in Workspace (`$ignoreUnknownInstances` keeps it). Delete the copies and reconnect Rojo.
+
 ## Layout
 
 | Folder | Becomes | Contents |
