@@ -93,4 +93,17 @@ function DataRules.deductCoins(profile: PlayerProfile, amount: number): (boolean
 		}
 end
 
+-- A short string that changes whenever any saved field changes. DataService compares it
+-- against the last saved one so an unchanged profile is not written again: Roblox queues
+-- DataStore writes and drops them once the queue is full, so repeat writes are not free.
+function DataRules.signature(profile: PlayerProfile): string
+	return string.format(
+		"%d|%d|%d|%d",
+		profile.wins,
+		profile.roundsSurvived,
+		profile.matchesPlayed,
+		profile.coins
+	)
+end
+
 return DataRules

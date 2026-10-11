@@ -18,6 +18,11 @@ local DataService = {}
 
 local started = false
 local profiles: { [Player]: PlayerProfile } = {}
+-- The signature of each player's last successful save, so saveProfile can skip no-op writes.
+local savedSignatures: { [Player]: string } = {}
+-- Players whose stored profile could not be read. Their session is playable, but it must
+-- never be saved over whatever is still in the DataStore.
+local saveBlocked: { [Player]: boolean } = {}
 local dataStore: GlobalDataStore? = nil
 local dataStoreAvailable = false
 
@@ -104,6 +109,18 @@ local function loadProfile(player: Player): PlayerProfile
 		end)
 		if success then
 			rawData = result
+		else
+			-- The store is there but would not answer. Whatever this player has saved is
+			-- still in it, and we do not know what it is, so a fresh profile must never be
+			-- written over the top of it: that would wipe their progress on a brief outage.
+			saveBlocked[player] = true
+			warn(
+				string.format(
+					"[Data] Could not read %s, saving is off for this session so their"
+						.. " stored progress is not overwritten",
+					player.Name
+				)
+			)
 		end
 	end
 
@@ -124,17 +141,28 @@ end
 
 local function saveProfile(player: Player)
 	local profile = profiles[player]
-	if not profile then
+	if not profile or saveBlocked[player] then
+		return
+	end
+	-- Skip the write when nothing has changed since the last successful save. Roblox queues
+	-- DataStore writes and drops them once the queue is full, so writing an unchanged profile
+	-- every autosave costs budget that a real save may need later.
+	local signature = DataRules.signature(profile)
+	if savedSignatures[player] == signature then
 		return
 	end
 	local key = "player_" .. tostring(player.UserId)
 	if dataStoreAvailable and dataStore then
 		local store = dataStore :: GlobalDataStore
-		retry(function()
+		local success = retry(function()
 			store:SetAsync(key, profile)
 			return true -- retry expects the action to return a value
 		end)
+		if not success then
+			return -- leave the signature alone so the next autosave tries again
+		end
 	end
+	savedSignatures[player] = signature
 end
 
 function DataService.getProfile(player: Player): PlayerProfile?
@@ -190,6 +218,8 @@ function DataService.start()
 	Players.PlayerRemoving:Connect(function(player: Player)
 		saveProfile(player)
 		profiles[player] = nil
+		savedSignatures[player] = nil
+		saveBlocked[player] = nil
 	end)
 
 	game:BindToClose(function()

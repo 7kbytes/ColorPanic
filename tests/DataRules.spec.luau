@@ -128,3 +128,27 @@ describe("DataRules.canAfford and deductCoins", function()
 		expect(updated.coins).toBe(10)
 	end)
 end)
+
+describe("DataRules.signature", function()
+	local base = { wins = 2, roundsSurvived = 7, matchesPlayed = 3, coins = 105 }
+
+	it("is the same for the same values", function()
+		expect(DataRules.signature(base)).toBe(DataRules.signature(table.clone(base)))
+	end)
+
+	it("changes when any saved field changes", function()
+		local original = DataRules.signature(base)
+		for _, field in { "wins", "roundsSurvived", "matchesPlayed", "coins" } do
+			local changed = table.clone(base)
+			changed[field] += 1
+			expect(DataRules.signature(changed) == original).toBe(false)
+		end
+	end)
+
+	it("does not confuse two fields swapping values", function()
+		local swapped = table.clone(base)
+		swapped.wins = base.roundsSurvived
+		swapped.roundsSurvived = base.wins
+		expect(DataRules.signature(swapped) == DataRules.signature(base)).toBe(false)
+	end)
+end)
