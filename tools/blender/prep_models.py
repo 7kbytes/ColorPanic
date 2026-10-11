@@ -47,6 +47,7 @@ BAKE_CAGE_SHARE = 0.02
 BAKE_RAY_SHARE = 0.05
 UV_ANGLE_LIMIT_DEGREES = 66.0
 UV_ISLAND_MARGIN = 0.004
+FBX_STUD_SCALE = 0.01
 
 
 def parse_args():
@@ -303,6 +304,9 @@ def export_fbx(obj, path):
         embed_textures=True,
         axis_forward="-Z",
         axis_up="Y",
+        # Blender writes FBX in centimetres, which Roblox reads as 100 studs per Blender
+        # unit. Scaling by 0.01 makes one Blender unit one stud in the importer.
+        global_scale=FBX_STUD_SCALE,
     )
 
 
