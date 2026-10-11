@@ -152,3 +152,34 @@ describe("DataRules.signature", function()
 		expect(DataRules.signature(swapped) == DataRules.signature(base)).toBe(false)
 	end)
 end)
+
+describe("DataRules.copyInto", function()
+	local function source()
+		return { wins = 4, roundsSurvived = 11, matchesPlayed = 6, coins = 250 }
+	end
+
+	it("copies every saved field", function()
+		local target = DataRules.defaultProfile()
+		DataRules.copyInto(target, source())
+		expect(DataRules.signature(target)).toBe(DataRules.signature(source()))
+	end)
+
+	it("keeps the same table, which is what ProfileStore saves", function()
+		local target = DataRules.defaultProfile()
+		local returned = DataRules.copyInto(target, source())
+		expect(returned == target).toBe(true)
+	end)
+
+	it("overwrites values that were already there", function()
+		local target = { wins = 99, roundsSurvived = 99, matchesPlayed = 99, coins = 99 }
+		DataRules.copyInto(target, source())
+		expect(target.wins).toBe(4)
+		expect(target.coins).toBe(250)
+	end)
+
+	it("leaves the source alone", function()
+		local from = source()
+		DataRules.copyInto(DataRules.defaultProfile(), from)
+		expect(DataRules.signature(from)).toBe(DataRules.signature(source()))
+	end)
+end)

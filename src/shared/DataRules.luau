@@ -93,9 +93,25 @@ function DataRules.deductCoins(profile: PlayerProfile, amount: number): (boolean
 		}
 end
 
--- A short string that changes whenever any saved field changes. DataService compares it
--- against the last saved one so an unchanged profile is not written again: Roblox queues
--- DataStore writes and drops them once the queue is full, so repeat writes are not free.
+-- Copies every saved field of `profile` into the existing table `target`, and returns it.
+--
+-- The rest of this module returns new profile tables, which keeps the rules easy to reason
+-- about. ProfileStore, though, saves one specific table (`Profile.Data`) and does not notice
+-- a replacement, so updates have to be written into that table in place. This is the one
+-- place that does it.
+function DataRules.copyInto(target: PlayerProfile, profile: PlayerProfile): PlayerProfile
+	target.wins = profile.wins
+	target.roundsSurvived = profile.roundsSurvived
+	target.matchesPlayed = profile.matchesPlayed
+	target.coins = profile.coins
+	return target
+end
+
+-- A short string that changes whenever any saved field changes.
+--
+-- H-01 added this so DataService could skip writing an unchanged profile. ProfileStore now
+-- decides when to write, so nothing in the game calls it; it is kept because it is the one
+-- cheap way to compare two profiles in tests and in logs.
 function DataRules.signature(profile: PlayerProfile): string
 	return string.format(
 		"%d|%d|%d|%d",

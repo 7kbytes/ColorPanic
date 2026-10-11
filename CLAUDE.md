@@ -64,4 +64,6 @@ Assets: all 33 demo assets are uploaded under the game owner's account. Their ID
 
 Tooling on `main`: a strict type check with luau-lsp (`scripts/typecheck.sh`) and pure-logic tests with Lune (`scripts/test.sh`). Run both, plus StyLua and Selene, before opening a pull request.
 
+Packages: Wally, pinned in `rokit.toml`. Run `wally install` after cloning or after `wally.toml` changes. The only dependency is ProfileStore, which gives player data session locking. `ServerPackages/` is not in git; `wally.lock` is.
+
 QA in Studio: use Test, Clients and Servers with 2 clients, never 8 (the machine runs out of memory). Players now start in the menu, so press Play first (`qa/snippets/press_play.client.luau`). Test actors must walk (`qa/snippets/actor.client.luau`); client-side teleports do not always reach the server.

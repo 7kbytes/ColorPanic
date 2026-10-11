@@ -1,46 +1,68 @@
 --!strict
 -- Saves and loads player profiles, and manages leaderstats and rewards.
--- Runs on the server. If DataStoreService is disabled or fails, it falls back
--- to an in-memory session cache so play and testing never crash.
+--
+-- Player data is held through ProfileStore, which locks a profile to one server at a time
+-- and saves it on its own schedule. That lock is what stops two servers writing over each
+-- other when a player rejoins quickly or ends up in two places at once.
+--
+-- If there is no usable DataStore, which is the normal case in Studio without API Services,
+-- the service runs every player in memory with saving switched off. The game stays fully
+-- playable and nothing is written, so whatever is already stored is left untouched.
+-- SessionRules holds the decisions and is tested outside Studio.
 
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local DataRules = require(ReplicatedStorage.Shared.DataRules)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local SessionRules = require(ReplicatedStorage.Shared.SessionRules)
 local Types = require(ReplicatedStorage.Shared.Types)
 
 type PlayerProfile = Types.PlayerProfile
+type SessionMode = SessionRules.SessionMode
 
 local DataService = {}
 
 local started = false
 local profiles: { [Player]: PlayerProfile } = {}
--- The signature of each player's last successful save, so saveProfile can skip no-op writes.
-local savedSignatures: { [Player]: string } = {}
--- Players whose stored profile could not be read. Their session is playable, but it must
--- never be saved over whatever is still in the DataStore.
-local saveBlocked: { [Player]: boolean } = {}
-local dataStore: GlobalDataStore? = nil
-local dataStoreAvailable = false
+-- How each player's data is held. Only a "live" session is ever written.
+local modes: { [Player]: SessionMode } = {}
+-- The ProfileStore profile behind a live session, which owns the table that gets saved.
+local sessions: { [Player]: any } = {}
+-- Players whose session we ended ourselves, so OnSessionEnd can tell our own shutdown
+-- apart from another server taking the profile over.
+local endedByUs: { [Player]: boolean } = {}
+-- True once the server is shutting down, so sessions ending then are not read as takeovers.
+local serverClosing = false
 
-local function initStore()
-	local ok, storeOrErr = pcall(function()
-		return DataStoreService:GetDataStore(Config.Data.dataStoreKey)
-	end)
-	if ok and storeOrErr then
-		dataStore = storeOrErr
-		dataStoreAvailable = true
-	else
+local profileStore: any = nil
+local storeAvailable = false
+
+-- Loading ProfileStore ----------------------------------------------------------------
+
+-- Requires ProfileStore from the Wally install. A missing package is a setup problem, not
+-- a reason to take the server down, so it falls back to memory with saving off.
+local function loadProfileStore(): any
+	local packages = ServerScriptService:FindFirstChild("ServerPackages")
+	local module = packages and packages:FindFirstChild("ProfileStore")
+	if not module then
+		warn("[Data] ProfileStore is not installed (run `wally install`); saving is off")
+		return nil
+	end
+	local ok, result = pcall(require, module)
+	if not ok then
 		warn(
 			string.format(
-				"[Data] DataStore not available (%s); running with session cache",
-				tostring(storeOrErr)
+				"[Data] ProfileStore failed to load (%s); saving is off",
+				tostring(result)
 			)
 		)
+		return nil
 	end
+	return result
 end
 
 local function retry<T>(action: () -> T): (boolean, T?)
@@ -66,6 +88,31 @@ local function retry<T>(action: () -> T): (boolean, T?)
 	end
 	return false, nil
 end
+
+-- Checks once, at startup, whether this server can actually reach the DataStore.
+--
+-- This matters because a failed read and a profile held by another server both end a
+-- session request with nothing, and they need opposite answers: a lock held elsewhere
+-- should ask the player to rejoin, while an unreachable store should let everyone play on
+-- without saving. One real request up front tells the two apart.
+local function probeStore(): boolean
+	local ok, store = pcall(function()
+		return DataStoreService:GetDataStore(Config.Data.dataStoreKey)
+	end)
+	if not ok or not store then
+		warn(string.format("[Data] DataStore not available (%s); saving is off", tostring(store)))
+		return false
+	end
+	local reachable = retry(function()
+		return (store :: GlobalDataStore):GetAsync("session_probe")
+	end)
+	if not reachable then
+		warn("[Data] DataStore did not answer; running in memory with saving off")
+	end
+	return reachable
+end
+
+-- Leaderstats -------------------------------------------------------------------------
 
 -- Returns the named folder under `parent`, creating it if it is missing.
 local function ensureFolder(parent: Instance, name: string): Instance
@@ -100,70 +147,138 @@ local function updateLeaderstats(player: Player, profile: PlayerProfile)
 	ensureIntValue(leaderstats, "Coins").Value = profile.coins
 end
 
-local function loadProfile(player: Player): PlayerProfile
-	local key = "player_" .. tostring(player.UserId)
-	local rawData = nil
-	if dataStoreAvailable and dataStore then
-		local success, result = retry(function()
-			return (dataStore :: GlobalDataStore):GetAsync(key)
-		end)
-		if success then
-			rawData = result
-		else
-			-- The store is there but would not answer. Whatever this player has saved is
-			-- still in it, and we do not know what it is, so a fresh profile must never be
-			-- written over the top of it: that would wipe their progress on a brief outage.
-			saveBlocked[player] = true
-			warn(
-				string.format(
-					"[Data] Could not read %s, saving is off for this session so their"
-						.. " stored progress is not overwritten",
-					player.Name
-				)
+-- Sessions ----------------------------------------------------------------------------
+
+local function clearPlayer(player: Player)
+	profiles[player] = nil
+	modes[player] = nil
+	sessions[player] = nil
+	endedByUs[player] = nil
+end
+
+-- Ends a player's session so another server can take the profile. ProfileStore does a
+-- final save as part of this.
+local function endSession(player: Player)
+	local session = sessions[player]
+	if not session then
+		clearPlayer(player)
+		return
+	end
+	endedByUs[player] = true
+	sessions[player] = nil
+	pcall(function()
+		session:EndSession()
+	end)
+	clearPlayer(player)
+end
+
+-- Writes the player's current profile into the table ProfileStore saves. Replacing that
+-- table would not be noticed, so the fields are copied into it.
+local function commit(player: Player, profile: PlayerProfile)
+	profiles[player] = profile
+	local session = sessions[player]
+	if not session or not SessionRules.canSave(modes[player] or "cache") then
+		return
+	end
+	-- IsActive can stop being true at any time, when another server takes the profile.
+	-- Nothing is yielded between the check and the write.
+	if session:IsActive() then
+		DataRules.copyInto(session.Data, profile)
+	end
+end
+
+-- Asks ProfileStore for a locked session. Returns the profile, or nil if the lock could
+-- not be taken before the player left or the timeout ran out.
+local function startSession(player: Player): any
+	local deadline = os.clock() + Config.Data.Session.startTimeoutSeconds
+	local ok, session = pcall(function()
+		return profileStore:StartSessionAsync(SessionRules.profileKey(player.UserId), {
+			-- ProfileStore calls this while it waits. Returning true gives up: either the
+			-- player has gone, or we have waited long enough. Setting Cancel also turns
+			-- off ProfileStore's own timeout, so this is the only one.
+			Cancel = function()
+				return player.Parent ~= Players or os.clock() > deadline
+			end,
+		})
+	end)
+	if not ok then
+		warn(
+			string.format(
+				"[Data] Session request failed for %s: %s",
+				player.Name,
+				tostring(session)
 			)
-		end
+		)
+		return nil
+	end
+	return session
+end
+
+local function loadProfile(player: Player)
+	local session = if storeAvailable and profileStore then startSession(player) else nil
+	local decision =
+		SessionRules.decideStart(storeAvailable, session ~= nil, player.Parent == Players)
+
+	if decision.kick then
+		-- Only ever reached with no session, since a lock we hold is never a reason to kick.
+		print(string.format("[Data] %s kicked: %s", player.Name, decision.reason))
+		player:Kick(Config.Data.Session.heldElsewhereMessage)
+		clearPlayer(player)
+		return
 	end
 
-	local profile = DataRules.sanitize(rawData)
+	if player.Parent ~= Players then
+		-- They left while the request ran. Hand the lock straight back.
+		if session then
+			pcall(function()
+				session:EndSession()
+			end)
+		end
+		clearPlayer(player)
+		return
+	end
+
+	modes[player] = decision.mode
+
+	local profile: PlayerProfile
+	if session then
+		session:AddUserId(player.UserId) -- so the profile can be found for GDPR requests
+		session:Reconcile()
+		-- Stored data is still sanitized: the lock says who may write, not that what was
+		-- written is valid.
+		profile = DataRules.sanitize(session.Data)
+		DataRules.copyInto(session.Data, profile)
+		sessions[player] = session
+
+		session.OnSessionEnd:Connect(function()
+			local present = player.Parent == Players
+			-- A shutdown ends every session, and that is our own doing, not a takeover.
+			local ours = endedByUs[player] == true or serverClosing
+			if SessionRules.shouldKickOnSessionEnd(present, ours) then
+				warn(string.format("[Data] %s: profile taken over by another server", player.Name))
+				player:Kick(Config.Data.Session.takenOverMessage)
+			end
+			sessions[player] = nil
+		end)
+	else
+		profile = DataRules.sanitize(nil)
+	end
+
 	profiles[player] = profile
 	updateLeaderstats(player, profile)
 	Remotes.PlayerDataUpdated.fireTo(player, { profile = profile })
 	print(
 		string.format(
-			"[Data] Loaded %s: %d wins, %d coins",
+			"[Data] Loaded %s: %d wins, %d coins (%s)",
 			player.Name,
 			profile.wins,
-			profile.coins
+			profile.coins,
+			decision.mode
 		)
 	)
-	return profile
 end
 
-local function saveProfile(player: Player)
-	local profile = profiles[player]
-	if not profile or saveBlocked[player] then
-		return
-	end
-	-- Skip the write when nothing has changed since the last successful save. Roblox queues
-	-- DataStore writes and drops them once the queue is full, so writing an unchanged profile
-	-- every autosave costs budget that a real save may need later.
-	local signature = DataRules.signature(profile)
-	if savedSignatures[player] == signature then
-		return
-	end
-	local key = "player_" .. tostring(player.UserId)
-	if dataStoreAvailable and dataStore then
-		local store = dataStore :: GlobalDataStore
-		local success = retry(function()
-			store:SetAsync(key, profile)
-			return true -- retry expects the action to return a value
-		end)
-		if not success then
-			return -- leave the signature alone so the next autosave tries again
-		end
-	end
-	savedSignatures[player] = signature
-end
+-- Public API --------------------------------------------------------------------------
 
 function DataService.getProfile(player: Player): PlayerProfile?
 	return profiles[player]
@@ -174,7 +289,7 @@ function DataService.awardRoundSurvivors(survivors: { Player })
 		local profile = profiles[player]
 		if profile then
 			local updated = DataRules.recordRoundSurvived(profile, Config.Rewards.coinsPerRound)
-			profiles[player] = updated
+			commit(player, updated)
 			updateLeaderstats(player, updated)
 			Remotes.PlayerDataUpdated.fireTo(player, { profile = updated })
 		end
@@ -186,7 +301,7 @@ function DataService.awardMatchWinners(winners: { Player })
 		local profile = profiles[player]
 		if profile then
 			local updated = DataRules.recordMatchVictory(profile, Config.Rewards.coinsPerWin)
-			profiles[player] = updated
+			commit(player, updated)
 			updateLeaderstats(player, updated)
 			Remotes.PlayerDataUpdated.fireTo(player, { profile = updated })
 		end
@@ -198,7 +313,7 @@ function DataService.recordMatchPlayed(participants: { Player })
 		local profile = profiles[player]
 		if profile then
 			local updated = DataRules.recordMatchPlayed(profile)
-			profiles[player] = updated
+			commit(player, updated)
 			Remotes.PlayerDataUpdated.fireTo(player, { profile = updated })
 		end
 	end
@@ -208,33 +323,35 @@ function DataService.start()
 	assert(not started, "DataService.start() called twice")
 	started = true
 
-	initStore()
-
-	for _, player in Players:GetPlayers() do
-		loadProfile(player)
+	local profileStoreModule = loadProfileStore()
+	if profileStoreModule and probeStore() then
+		local ok, store = pcall(function()
+			return profileStoreModule.New(Config.Data.dataStoreKey, DataRules.defaultProfile())
+		end)
+		if ok and store then
+			profileStore = store
+			storeAvailable = true
+		else
+			warn(
+				string.format("[Data] ProfileStore.New failed (%s); saving is off", tostring(store))
+			)
+		end
 	end
 
-	Players.PlayerAdded:Connect(loadProfile)
-	Players.PlayerRemoving:Connect(function(player: Player)
-		saveProfile(player)
-		profiles[player] = nil
-		savedSignatures[player] = nil
-		saveBlocked[player] = nil
+	-- Sessions yield, so each player is loaded on its own thread.
+	for _, player in Players:GetPlayers() do
+		task.spawn(loadProfile, player)
+	end
+	Players.PlayerAdded:Connect(function(player: Player)
+		task.spawn(loadProfile, player)
 	end)
+	Players.PlayerRemoving:Connect(endSession)
 
+	-- ProfileStore saves active sessions on shutdown and autosaves on its own schedule, so
+	-- there is no autosave loop here. This only records that a shutdown is underway, so the
+	-- sessions ProfileStore then ends are not mistaken for another server taking over.
 	game:BindToClose(function()
-		for player in profiles do
-			saveProfile(player)
-		end
-	end)
-
-	task.spawn(function()
-		while true do
-			task.wait(Config.Data.autoSaveSeconds)
-			for player in profiles do
-				saveProfile(player)
-			end
-		end
+		serverClosing = true
 	end)
 end
 
