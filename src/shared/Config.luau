@@ -353,9 +353,9 @@ local Config: Types.ConfigType = {
 			leave = 131161271982260, -- A-09, red "Back" button art used for Leave
 			play = 76866923563733, -- A-09, green Play button art
 			logo = 107467392816535, -- A-03, title screen logo
-			-- Loading screen key art. 0 falls back to the backdrop colour and the logo, so
-			-- the screen works before this is uploaded. Use the Image ID, not the Decal ID.
-			loadingArt = 0,
+			-- A-01, loading screen key art. The screen still falls back to the backdrop
+			-- colour and the logo if this is 0. Image ID, not the Decal ID.
+			loadingArt = 137632580025202,
 			sadFace = 114507417954529, -- A-07, eliminated card
 			eye = 92667144225263, -- A-08, spectate bar
 			crown = 81195306124170, -- A-04, round badge

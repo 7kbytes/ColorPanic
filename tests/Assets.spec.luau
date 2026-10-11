@@ -95,3 +95,19 @@ describe("Config.Assets sky", function()
 		expect(sky.down == sky.front).toBe(false)
 	end)
 end)
+
+describe("Config.Assets loading art", function()
+	it("is a valid asset ID, or 0 for the logo fallback", function()
+		local art = Config.Assets.Images.loadingArt
+		expect(art == 0 or isAssetId(art)).toBe(true)
+	end)
+
+	it("is not the same image as the logo", function()
+		-- The loading screen falls back to the logo when there is no art. Pointing both at
+		-- one asset would hide that fallback being broken.
+		local images = Config.Assets.Images
+		if images.loadingArt ~= 0 then
+			expect(images.loadingArt == images.logo).toBe(false)
+		end
+	end)
+end)
