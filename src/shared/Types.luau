@@ -247,6 +247,14 @@ export type ConfigType = {
 			stopwatch: number,
 			tileGloss: number,
 			confetti: number,
+			sky: {
+				back: number,
+				down: number,
+				front: number,
+				left: number,
+				right: number,
+				up: number,
+			},
 		},
 	},
 	Queue: {

@@ -342,6 +342,15 @@ local Config: Types.ConfigType = {
 			stopwatch = 112716861247418, -- A-06, timer bar
 			tileGloss = 106294149443991, -- A-11, faint gloss on tile sides
 			confetti = 96276252812980, -- A-10, Victory confetti
+			-- Skybox faces (S-03, Meshy AI), uploaded as Image assets. 0 keeps Roblox's default sky.
+			sky = {
+				back = 98513091936049,
+				down = 91105787968051,
+				front = 98235745704650,
+				left = 125115257199939,
+				right = 71698127783259,
+				up = 132902049326289,
+			},
 		},
 	},
 

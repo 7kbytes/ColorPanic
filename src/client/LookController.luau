@@ -54,6 +54,26 @@ local function applyLighting()
 	atmosphere.Color = toColor3(LOOK.atmosphere.colorRgb)
 	atmosphere.Decay = toColor3(LOOK.atmosphere.decayRgb)
 
+	local skyIds = Config.Assets.Images.sky
+	if skyIds.front ~= 0 then
+		-- Remove the place's own sky so the two never fight, then add ours.
+		for _, child in Lighting:GetChildren() do
+			if child:IsA("Sky") and child.Name ~= "ColorPanicSky" then
+				child:Destroy()
+			end
+		end
+		local sky = effect("Sky", Lighting) :: Sky
+		sky.SkyboxBk = UiStyle.assetUrl(skyIds.back)
+		sky.SkyboxDn = UiStyle.assetUrl(skyIds.down)
+		sky.SkyboxFt = UiStyle.assetUrl(skyIds.front)
+		sky.SkyboxLf = UiStyle.assetUrl(skyIds.left)
+		sky.SkyboxRt = UiStyle.assetUrl(skyIds.right)
+		sky.SkyboxUp = UiStyle.assetUrl(skyIds.up)
+		-- The painted sky has its own sun, so the engine's sun, moon and stars are hidden.
+		sky.CelestialBodiesShown = false
+		sky.StarCount = 0
+	end
+
 	local bloom = effect("BloomEffect", Lighting) :: BloomEffect
 	bloom.Intensity = LOOK.bloom.intensity
 	bloom.Size = LOOK.bloom.size
