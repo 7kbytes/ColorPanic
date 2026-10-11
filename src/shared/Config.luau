@@ -379,6 +379,21 @@ local Config: Types.ConfigType = {
 		},
 	},
 
+	-- Which scenery props stop a player, and the collider that does it (A-03).
+	--
+	-- A prop that is not listed here stays walk-through. RocksAndFlowers is left out on
+	-- purpose: it is ankle height ground scatter, and colliding with it reads as getting
+	-- stuck rather than as solidity. The islands, spawn pads and clouds are left out
+	-- because the models already carry their own floor and railing collision.
+	Props = {
+		MarkerPillar = { kind = "box", radius = 0, postWidth = 0, postDepth = 0, inset = 0.3 },
+		LampPost = { kind = "cylinder", radius = 0.7, postWidth = 0, postDepth = 0, inset = 0 },
+		-- The trunk only, so the fronds overhead stay clear.
+		PalmTree = { kind = "cylinder", radius = 1.1, postWidth = 0, postDepth = 0, inset = 0 },
+		-- A post down each side, so players can still walk under the arch.
+		EntranceArch = { kind = "posts", radius = 0, postWidth = 3, postDepth = 3, inset = 0 },
+	},
+
 	-- Loading screen (A-01). Runs from ReplicatedFirst, before anything else the client does.
 	Loading = {
 		minSeconds = 10, -- keep it up at least this long so it cannot flash on and off

@@ -14,6 +14,11 @@ DataService.start()
 local LookService = require(script.Parent.LookService)
 LookService.start()
 
+-- Also before MatchService: the prop colliders are parts, and the reset audit compares the
+-- workspace part count against a baseline taken when MatchService starts.
+local PropCollision = require(script.Parent.PropCollision)
+PropCollision.start()
+
 local MatchService = require(script.Parent.MatchService)
 MatchService.start()
 
