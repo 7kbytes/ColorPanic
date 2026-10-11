@@ -2,6 +2,11 @@
   "name": "ColorPanic",
   "tree": {
     "$className": "DataModel",
+    "Workspace": {
+      "$className": "Workspace",
+      "$path": "models",
+      "$ignoreUnknownInstances": true
+    },
     "ServerScriptService": {
       "$className": "ServerScriptService",
       "Server": {

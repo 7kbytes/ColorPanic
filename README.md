@@ -103,6 +103,20 @@ Run all of these before opening a pull request. On Windows, run the scripts from
 - **Adding tests:** create `tests/<Name>.spec.luau` using `describe`, `it` and `expect` from the harness.
 - **Type check:** `scripts/typecheck.sh` uses luau-lsp with Roblox API types and a Rojo sourcemap, so `--!strict` errors and bad requires are caught outside Studio. On first run it downloads the Roblox type definitions for the pinned luau-lsp version into `.luau-lsp/` (git-ignored).
 
+## 3D models
+
+Models live in `models/` as `.rbxm` or `.rbxmx` files. Rojo maps each file into `Workspace` under the file name, so `models/Lobby.rbxm` becomes `workspace.Lobby`. `Workspace` is mapped with `$ignoreUnknownInstances`, so the baseplate and everything the game builds at runtime are left alone.
+
+`tests/Models.spec.luau` checks every model file against the builder rules from the 3D models workbook (the rules are in `tests/ModelRules.luau`):
+
+- Every part is anchored.
+- Plain parts use only the six palette colours or neutrals, never green. Textured parts are checked when their textures are prepared.
+- Nothing visible inside the 60 x 60 tile square near tile height. Nothing collidable in it or within 12 studs of it (no standable rim), down to 10 studs under the tiles.
+- `Lobby` and `SpectatorArea` have a `Spawns` folder with 12 or more flat, anchored parts. If either model is missing, the game builds its grey placeholder instead.
+- Phone budgets: at most 400 parts per model, and triangle counts from `art/models_manifest.json` (20,000 per mesh, Roblox's limit, and 80,000 per model).
+
+Roblox cannot report a mesh's triangles from a model file, so the asset prep step records each MeshPart's count in `art/models_manifest.json` (kept outside `models/`, which Rojo maps into Workspace), keyed by model name and then MeshPart name. A MeshPart missing from the manifest fails the check.
+
 ## Layout
 
 | Folder | Becomes | Contents |
@@ -110,6 +124,7 @@ Run all of these before opening a pull request. On Windows, run the scripts from
 | `src/server` | `ServerScriptService.Server` | Server services and pure game rules |
 | `src/shared` | `ReplicatedStorage.Shared` | Config, Types, Remotes, Util |
 | `src/client` | `StarterPlayer.StarterPlayerScripts.Client` | Client controllers and their pure view models |
+| `models` | `Workspace` | 3D models, one file per top-level model, named after the file |
 | `tests` | (not in the game) | Lune tests and the test harness |
 | `qa` | (not in the game) | QA records, the demo QA checklist and Studio command bar snippets |
 | `art` | (not in the game) | The artist's palette (`palette.json`) |
