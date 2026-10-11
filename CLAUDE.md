@@ -34,6 +34,13 @@ Stacked, so merge in this order:
 - **#51 H-01** (`sliceH/H-01-verify-persistence`), Studio verification of P1-01, plus the two data bugs it exposed: a failed read could be saved over real stored data, and an autosave wrote whether or not anything had changed.
 - **#52 P1-02** (`slice5/P1-02-session-locking`), based on #51. ProfileStore through Wally for player data session locking, with the decisions in the pure `shared/SessionRules`.
 
+### Slice H, harden to playable
+
+The current slice. Task list in `docs/sliceH-tasks.md` (H-01 to H-08, proposed, awaiting
+producer approval). It adds no features: each task either proves something works with real
+players, devices or servers, or fixes what that turned up. H-01 is merged as #51. Four of
+the eight tasks are gated on a publish, a phone, or real players.
+
 ### Not done
 
 - **D-11, the demo playtest, has never been run.** `qa/demo-qa.md` is still entirely blank. It needs 4 or more real players on a published copy. Watch whether 60% tiles by round 8 are too hard (`Config.Shrink`). Most of the tuning questions are waiting on this, so it is the critical path.
