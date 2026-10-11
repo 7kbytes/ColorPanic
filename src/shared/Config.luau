@@ -381,7 +381,7 @@ local Config: Types.ConfigType = {
 
 	-- Loading screen (A-01). Runs from ReplicatedFirst, before anything else the client does.
 	Loading = {
-		minSeconds = 2, -- keep it up at least this long so it cannot flash on and off
+		minSeconds = 10, -- keep it up at least this long so it cannot flash on and off
 		fadeSeconds = 0.6,
 		-- Never trap a player behind one asset that will not resolve. When this runs out,
 		-- loading continues in the background and the player goes in.
