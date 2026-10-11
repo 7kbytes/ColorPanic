@@ -5,7 +5,10 @@
     "Workspace": {
       "$className": "Workspace",
       "$path": "models",
-      "$ignoreUnknownInstances": true
+      "$ignoreUnknownInstances": true,
+      "$properties": {
+        "StreamingEnabled": false
+      }
     },
     "ServerScriptService": {
       "$className": "ServerScriptService",
