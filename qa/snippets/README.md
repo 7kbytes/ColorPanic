@@ -15,6 +15,7 @@ session is running.
 | `placement_recorder.server.luau` | server | Logs into `_G.placelog` each time a player's location changes, with server time, to line up with the `[Match]` transitions. |
 | `kill_during_run.server.luau` | server | Kills the named player's character during the next Run. |
 | `log_summary.server.luau` | server | Returns the server log lines that matter for QA: transitions, eliminations, winners, reset audits, warnings and errors. |
+| `soak.server.luau` | server | For the H-05 soak run. Paste once, then let matches play: it samples the workspace part count and server memory at every Reset and collects warnings, errors and any `[Reset] Problems`. Read the report with `_G.soakdump()`. |
 
 **Do not teleport characters from the client in tests.** The first version of the actor moved
 the character with `PivotTo` on the client. Some of those teleports never reached the server,

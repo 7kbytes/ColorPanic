@@ -63,3 +63,34 @@ Roblox has you on different servers.
 
 Not covered even by the above: real DataStore throttling under load, and what happens when
 ProfileStore's own retries outlast the 30 second session timeout in `Config.Data.Session`.
+
+## H-05 Soak test, part done
+
+**Headless half, done 2026-10-11.** `tests/Soak.spec.luau` drives MatchFlow through full
+matches with a 500 transition cap, so a state that loops or sticks fails the test instead of
+hanging it. 12 tests: a single match to the lobby, a match where nobody is ever eliminated
+(which is the match that would never end without the round cap, and it ends at round 8), a
+match where everyone falls as fast as the rules allow, every participant leaving mid-match,
+ten matches back to back with the player count varying from 2 to 8, identical matches staying
+identical so nothing accumulates, and the reset audit over ten matches including a two parts
+per match leak. All pass, 330 tests in total.
+
+Traces were checked by hand rather than trusted: 4 players losing one per round gives 3
+rounds, 1 survivor, Victory, Reset, Lobby in 17 transitions; nobody eliminated runs to the
+round cap at 8 and ends with 4 sharing the win in 37.
+
+**Live half, to run.** The headless test cannot see leaked Instances or client memory, which
+are the things a soak is really for. Paste `qa/snippets/soak.server.luau` into the server
+command bar, let 5 or more matches play, then run `_G.soakdump()` and paste the table in.
+
+| # | Check | Expected | Result |
+| --- | --- | --- | --- |
+| 1 | 5 or more matches without restarting the server | Every row of `_G.soakdump()` says clean, `problems: 0` | |
+| 2 | Part count drift | The drift column stays at 0 for every match | |
+| 3 | Memory drift | Memory comes back to near the baseline, with no climb across matches | |
+| 4 | Server log | No `[Reset] Problems`, no red errors from game scripts | |
+| 5 | Client log after the run | No repeated asset or HUD load failures building up | |
+| 6 | The lobby after the last match | Everyone back on a lobby pad, no leftover tiles visible | |
+
+Not covered: a soak with more than 2 clients, which needs H-04 and real players, and a soak
+long enough to cross ProfileStore's own autosave interval.
