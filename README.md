@@ -113,9 +113,9 @@ Models live in `models/` as `.rbxm` or `.rbxmx` files. Rojo maps each file into 
 - Plain parts use only the six palette colours or neutrals, never green. Textured parts are checked when their textures are prepared.
 - Nothing visible inside the 60 x 60 tile square near tile height. Nothing collidable in it or within 12 studs of it (no standable rim), down to 10 studs under the tiles.
 - `Lobby` and `SpectatorArea` have a `Spawns` folder with 12 or more flat, anchored parts. If either model is missing, the game builds its grey placeholder instead.
-- Phone budgets: at most 400 parts per model, and triangle counts from `models/manifest.json` (20,000 per mesh, Roblox's limit, and 80,000 per model).
+- Phone budgets: at most 400 parts per model, and triangle counts from `art/models_manifest.json` (20,000 per mesh, Roblox's limit, and 80,000 per model).
 
-Roblox cannot report a mesh's triangles from a model file, so the asset prep step records each MeshPart's count in `models/manifest.json`, keyed by model name and then MeshPart name. A MeshPart missing from the manifest fails the check.
+Roblox cannot report a mesh's triangles from a model file, so the asset prep step records each MeshPart's count in `art/models_manifest.json` (kept outside `models/`, which Rojo maps into Workspace), keyed by model name and then MeshPart name. A MeshPart missing from the manifest fails the check.
 
 ## Layout
 

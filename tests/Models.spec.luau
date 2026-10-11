@@ -12,7 +12,8 @@ local describe, it, expect = Harness.describe, Harness.it, Harness.expect
 local Config = Harness.requireModule("ReplicatedStorage.Shared.Config")
 
 local MODELS_DIR = "models"
-local MANIFEST_PATH = "models/manifest.json"
+-- Kept outside models/: Rojo would map a .json file there into Workspace as a ModuleScript.
+local MANIFEST_PATH = "art/models_manifest.json"
 local PROJECT_PATH = "default.project.json"
 
 local Instance = roblox.Instance
@@ -68,8 +69,14 @@ end
 -- Rojo names the mapped instance after the file, so the checker uses the file name too.
 local function loadModel(fileName: string): any
 	local roots = roblox.deserializeModel(fs.readFile(MODELS_DIR .. "/" .. fileName))
-	local model = Instance.new("Model")
-	model.Name = string.gsub(fileName, "%.rbxmx?$", "")
+	local name = string.gsub(fileName, "%.rbxmx?$", "")
+	if #roots == 1 then
+		roots[1].Name = name
+		return roots[1]
+	end
+	-- Several roots: Rojo maps them under one instance named after the file.
+	local model = Instance.new("Folder")
+	model.Name = name
 	for _, root in roots do
 		root.Parent = model
 	end

@@ -11,3 +11,7 @@
 # Type checking (scripts/typecheck.sh)
 sourcemap.json
 .luau-lsp/
+
+# 3D models are source files, not build output
+!models/*.rbxm
+!models/*.rbxmx

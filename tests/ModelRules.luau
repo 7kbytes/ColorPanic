@@ -9,7 +9,7 @@
 --   3. Nothing visible inside the tile square near tile height, and nothing collidable
 --      in or next to it (a rim players could stand on), down to the fall-out clearance.
 --   4. Lobby and SpectatorArea have a Spawns folder with enough flat, anchored parts.
---   5. Phone budgets: a part count, and triangle counts from models/manifest.json
+--   5. Phone budgets: a part count, and triangle counts from art/models_manifest.json
 --      (Roblox cannot report mesh triangles from a model file, so the asset prep step
 --      records them).
 
@@ -205,7 +205,7 @@ function ModelRules.check(
 		if part:IsA("MeshPart") then
 			local triangles = meshes[part.Name]
 			if triangles == nil then
-				fail(name .. " is a MeshPart with no triangle count in models/manifest.json")
+				fail(name .. " is a MeshPart with no triangle count in art/models_manifest.json")
 			else
 				modelTriangles += triangles
 				if triangles > limits.maxTrianglesPerMesh then
