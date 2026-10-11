@@ -118,6 +118,11 @@ local function buildGui(): Gui
 		Vector2.new(0.5, 1),
 		UDim2.fromScale(0.5, 1 - SPECTATE.barBottom)
 	)
+	-- The bar is a fraction of the screen, so on a phone it has to stay tall and wide enough
+	-- for its buttons to meet the touch minimum.
+	local barMin = Instance.new("UISizeConstraint")
+	barMin.MinSize = Vector2.new(SPECTATE.barMinPixels[1], SPECTATE.barMinPixels[2])
+	barMin.Parent = bar
 	local layout = Instance.new("UIListLayout")
 	layout.FillDirection = Enum.FillDirection.Horizontal
 	layout.VerticalAlignment = Enum.VerticalAlignment.Center
