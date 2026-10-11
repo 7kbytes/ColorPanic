@@ -1,1 +1,15 @@
-{}
+{
+  "Lobby": {
+    "meshes": {
+      "IslandBase": 10000,
+      "IslandTop": 4000,
+      "SpawnPad": 2000,
+      "MarkerPillar": 999,
+      "CentralPlatform": 6000,
+      "EntranceArch": 8000,
+      "PalmTree": 3000,
+      "RocksAndFlowers": 2999,
+      "LampPost": 2000
+    }
+  }
+}
