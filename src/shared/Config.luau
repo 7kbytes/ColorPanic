@@ -353,6 +353,9 @@ local Config: Types.ConfigType = {
 			leave = 131161271982260, -- A-09, red "Back" button art used for Leave
 			play = 76866923563733, -- A-09, green Play button art
 			logo = 107467392816535, -- A-03, title screen logo
+			-- Loading screen key art. 0 falls back to the backdrop colour and the logo, so
+			-- the screen works before this is uploaded. Use the Image ID, not the Decal ID.
+			loadingArt = 0,
 			sadFace = 114507417954529, -- A-07, eliminated card
 			eye = 92667144225263, -- A-08, spectate bar
 			crown = 81195306124170, -- A-04, round badge
@@ -374,6 +377,26 @@ local Config: Types.ConfigType = {
 				up = 121629052804340,
 			},
 		},
+	},
+
+	-- Loading screen (A-01). Runs from ReplicatedFirst, before anything else the client does.
+	Loading = {
+		minSeconds = 2, -- keep it up at least this long so it cannot flash on and off
+		fadeSeconds = 0.6,
+		-- Never trap a player behind one asset that will not resolve. When this runs out,
+		-- loading continues in the background and the player goes in.
+		preloadTimeoutSeconds = 20,
+		tipSeconds = 3.5, -- how long each tip stays on screen
+		backdropRgb = { 20, 20, 40 }, -- shown behind the art, and alone when there is no art
+		textRgb = { 255, 255, 255 },
+		barRgb = { 255, 214, 51 }, -- the progress fill, the yellow from the palette's star
+		barTrackRgb = { 255, 255, 255 },
+		barTrackTransparency = 0.7,
+		barHeight = 0.02, -- fraction of the screen height
+		barWidth = 0.5,
+		barY = 0.82,
+		logoSize = { 0.42, 0.26 },
+		logoY = 0.16,
 	},
 
 	-- Join queue (D-16). Players start in the menu; only queued players count toward a match.
