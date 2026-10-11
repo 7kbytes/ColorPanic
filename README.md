@@ -152,6 +152,7 @@ If `rojo serve` is running while a model file is re-saved, Rojo can leave a dupl
 | `src/server` | `ServerScriptService.Server` | Server services and pure game rules |
 | `src/shared` | `ReplicatedStorage.Shared` | Config, Types, Remotes, Util |
 | `src/client` | `StarterPlayer.StarterPlayerScripts.Client` | Client controllers and their pure view models |
+| `src/replicatedfirst` | `ReplicatedFirst` | The loading screen, which has to run before anything else the client does |
 | `models` | `Workspace` | 3D models, one file per top-level model, named after the file |
 | `tests` | (not in the game) | Lune tests and the test harness |
 | `qa` | (not in the game) | QA records, the demo QA checklist and Studio command bar snippets |
