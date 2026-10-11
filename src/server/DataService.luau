@@ -284,6 +284,18 @@ function DataService.getProfile(player: Player): PlayerProfile?
 	return profiles[player]
 end
 
+-- Replaces a player's profile and tells everything that cares: the save, the leaderstats
+-- and the client. For callers that work out a new profile themselves, like the daily
+-- reward claim, so they do not each have to remember all three steps.
+function DataService.setProfile(player: Player, profile: PlayerProfile)
+	if not profiles[player] then
+		return -- they left, or never loaded; nothing to update
+	end
+	commit(player, profile)
+	updateLeaderstats(player, profile)
+	Remotes.PlayerDataUpdated.fireTo(player, { profile = profile })
+end
+
 function DataService.awardRoundSurvivors(survivors: { Player })
 	for _, player in survivors do
 		local profile = profiles[player]

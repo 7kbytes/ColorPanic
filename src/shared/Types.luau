@@ -278,6 +278,12 @@ export type ConfigType = {
 			},
 		},
 	},
+	Daily: {
+		track: { number },
+		claimCooldown: number,
+		title: string,
+		claimedMessage: string,
+	},
 	Leaderboard: {
 		storeKey: string,
 		topCount: number,
@@ -336,6 +342,11 @@ export type ConfigType = {
 		shopRgb: { number },
 		leaderboardRgb: { number },
 		leaderboardPanelSize: { number },
+		dailyRgb: { number },
+		dailyTileRgb: { number },
+		dailyDoneRgb: { number },
+		dailyNextRgb: { number },
+		dailyClaimRgb: { number },
 		leaderboardRowHeight: number,
 		howToSize: { number },
 		howToCorner: { number },
@@ -380,6 +391,10 @@ export type PlayerProfile = {
 	roundsSurvived: number,
 	matchesPlayed: number,
 	coins: number,
+	-- Daily rewards (A-08). `lastClaimDay` is a whole UTC day number from the server
+	-- clock, 0 meaning never claimed. `streak` is consecutive claimed days.
+	lastClaimDay: number,
+	streak: number,
 }
 
 -- Remote payloads, server to client. endsAt is a server timestamp from
@@ -448,6 +463,18 @@ export type MatchResultPayload = {
 
 export type PlayerDataPayload = {
 	profile: PlayerProfile,
+}
+
+-- The daily rewards panel's state (A-08). Sent by the server, which owns the clock:
+-- `secondsUntilNext` is a duration rather than a timestamp, so the client counts down
+-- without ever deciding whether a new day has started.
+export type DailyPayload = {
+	canClaim: boolean,
+	streak: number,
+	trackDay: number,
+	reward: number,
+	secondsUntilNext: number,
+	track: { number },
 }
 
 -- One line of the top players board (A-04). Tied players share a place.

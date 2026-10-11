@@ -21,6 +21,8 @@ local NAMES = {
 	"RequestLeave",
 	"PlayerDataUpdated",
 	"LeaderboardUpdated",
+	"DailyUpdated",
+	"RequestDailyClaim",
 }
 
 -- A server to client channel. fireAll and fireTo run on the server only,
@@ -86,6 +88,8 @@ local Remotes = {}
 -- Client requests (D-16 join queue).
 Remotes.RequestPlay = clientRequest("RequestPlay")
 Remotes.RequestLeave = clientRequest("RequestLeave")
+-- Daily rewards (A-08). No payload: the server decides whether a claim is due.
+Remotes.RequestDailyClaim = clientRequest("RequestDailyClaim")
 
 Remotes.StateChanged = serverToClient("StateChanged") :: ServerToClient<Types.StateChangedPayload>
 Remotes.RoundInfo = serverToClient("RoundInfo") :: ServerToClient<Types.RoundInfoPayload>
@@ -99,6 +103,7 @@ Remotes.PlayerDataUpdated =
 	serverToClient("PlayerDataUpdated") :: ServerToClient<Types.PlayerDataPayload>
 Remotes.LeaderboardUpdated =
 	serverToClient("LeaderboardUpdated") :: ServerToClient<Types.LeaderboardPayload>
+Remotes.DailyUpdated = serverToClient("DailyUpdated") :: ServerToClient<Types.DailyPayload>
 
 -- Creates the Remotes folder and every RemoteEvent. Call once at server startup,
 -- before any service fires. Safe to call again.

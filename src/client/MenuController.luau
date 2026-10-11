@@ -128,6 +128,119 @@ local function makeSoonTile(name: string, rgb: { number }): Frame
 	return tile
 end
 
+-- The daily rewards panel (A-08), opened from the menu's Daily Rewards tile.
+--
+-- The server owns the clock and the decision. This draws the track, counts down locally
+-- between updates purely so the number moves, and sends a claim request that the server
+-- is free to refuse.
+local function makeDailyPanel(parent: Instance): (Frame, (Types.DailyPayload) -> ())
+	local menu = Config.Menu
+	local daily = Config.Daily
+	local panel = UiStyle.makePanel(
+		"DailyRewards",
+		menu.leaderboardPanelSize,
+		Vector2.new(0.5, 0.5),
+		UDim2.fromScale(0.5, 0.5)
+	)
+	panel.Visible = false
+	panel.Parent = parent
+
+	local title = UiStyle.makeText("Title", panel, UiStyle.HEADING_FONT)
+	title.Size = UDim2.fromScale(1, 0.12)
+	title.Text = daily.title
+
+	-- One tile per day of the track, in a row.
+	local dayTiles: { { frame: Frame, label: TextLabel } } = {}
+	local count = #daily.track
+	for index = 1, count do
+		local tile = Instance.new("Frame")
+		tile.Name = "Day" .. index
+		tile.Size = UDim2.fromScale(0.9 / count - 0.01, 0.2)
+		tile.Position = UDim2.fromScale(0.05 + (index - 1) * (0.9 / count), 0.18)
+		tile.BackgroundColor3 = UiStyle.toColor3(menu.dailyTileRgb)
+		tile.BorderSizePixel = 0
+		UiStyle.addCorner(tile)
+		tile.Parent = panel
+		local label = UiStyle.makeText("Coins", tile, UiStyle.BODY_FONT)
+		label.Text = tostring(daily.track[index])
+		table.insert(dayTiles, { frame = tile, label = label })
+	end
+
+	local status = UiStyle.makeText("Status", panel, UiStyle.BODY_FONT)
+	status.Position = UDim2.fromScale(0, 0.44)
+	status.Size = UDim2.fromScale(1, 0.12)
+
+	local claim = UiStyle.makeButton("Claim", "Claim", menu.dailyClaimRgb)
+	claim.AnchorPoint = Vector2.new(0.5, 0)
+	claim.Position = UDim2.fromScale(0.5, 0.62)
+	claim.Size = UDim2.fromScale(0.5, 0.13)
+	claim.Parent = panel
+
+	local close = UiStyle.makeButton("Close", "Close", menu.leaderboardRgb)
+	close.AnchorPoint = Vector2.new(0.5, 1)
+	close.Position = UDim2.fromScale(0.5, 1)
+	close.Size = UDim2.fromScale(0.4, 0.11)
+	close.Parent = panel
+	close.Activated:Connect(function()
+		panel.Visible = false
+	end)
+
+	local latest: Types.DailyPayload? = nil
+	-- Counts down between server updates so the clock looks alive. It is display only:
+	-- whether a claim is actually due is the server's call, re-checked on every update.
+	local remaining = 0
+
+	local function draw()
+		local payload = latest
+		if not payload then
+			return
+		end
+		for index, tile in dayTiles do
+			local claimed = index < payload.trackDay
+				or (index == payload.trackDay and not payload.canClaim)
+			local isNext = index == payload.trackDay and payload.canClaim
+			tile.frame.BackgroundColor3 = UiStyle.toColor3(
+				if isNext
+					then menu.dailyNextRgb
+					elseif claimed then menu.dailyDoneRgb
+					else menu.dailyTileRgb
+			)
+		end
+		claim.Visible = payload.canClaim
+		if payload.canClaim then
+			status.Text = string.format("Day %d: %d coins", payload.trackDay, payload.reward)
+		else
+			local hours = math.floor(remaining / 3600)
+			local minutes = math.floor((remaining % 3600) / 60)
+			status.Text = string.format("%s  %dh %dm", daily.claimedMessage, hours, minutes)
+		end
+	end
+
+	task.spawn(function()
+		while true do
+			task.wait(1)
+			if remaining > 0 then
+				remaining -= 1
+				if panel.Visible then
+					draw()
+				end
+			end
+		end
+	end)
+
+	claim.Activated:Connect(function()
+		Remotes.RequestDailyClaim.fire()
+	end)
+
+	local function update(payload: Types.DailyPayload)
+		latest = payload
+		remaining = payload.secondsUntilNext
+		draw()
+	end
+
+	return panel, update
+end
+
 -- The top players panel (A-05), opened from the menu's Leaderboard tile.
 --
 -- The server sends the rows; this only draws them. The same rows are on the board in the
@@ -309,20 +422,32 @@ local function buildGui(): Gui
 	play.Parent = panel
 	local settings = makeSoonTile("Settings", menu.settingsRgb)
 	local shop = makeSoonTile("Shop", menu.shopRgb)
-	-- Unlike the two above, this one works, so it is a button at full strength (A-05).
+	-- Unlike the two above, these work, so they are buttons at full strength (A-05, A-08).
 	local leaderboard = UiStyle.makeButton("Leaderboard", "Leaderboard", menu.leaderboardRgb)
-	-- A Frame for the two greyed tiles and a TextButton for the working one, so the list is
+	local dailyRewards = UiStyle.makeButton("DailyRewards", "Daily Rewards", menu.dailyRgb)
+	-- Frames for the two greyed tiles and TextButtons for the working ones, so the list is
 	-- typed by what they have in common.
-	for _, tile in { settings, shop, leaderboard } :: { GuiObject } do
+	for _, tile in { settings, shop, leaderboard, dailyRewards } :: { GuiObject } do
 		tile.Size = UDim2.fromScale(menu.soonSize[1], menu.soonSize[2])
 		tile.Parent = panel
 	end
 
 	local leaderboardPanel, updateLeaderboard = makeLeaderboardPanel(panel)
+	local dailyPanel, updateDaily = makeDailyPanel(panel)
+	-- Only one panel at a time, so they cannot stack on top of each other.
+	local function openOnly(target: Frame)
+		for _, other in { leaderboardPanel, dailyPanel } do
+			other.Visible = other == target and not target.Visible
+		end
+	end
 	leaderboard.Activated:Connect(function()
-		leaderboardPanel.Visible = not leaderboardPanel.Visible
+		openOnly(leaderboardPanel)
+	end)
+	dailyRewards.Activated:Connect(function()
+		openOnly(dailyPanel)
 	end)
 	Remotes.LeaderboardUpdated.connect(updateLeaderboard)
+	Remotes.DailyUpdated.connect(updateDaily)
 	-- The Play button's height follows its art, so the tiles are placed from its drawn size.
 	local function placeTiles()
 		local panelHeight = panel.AbsoluteSize.Y
@@ -332,6 +457,8 @@ local function buildGui(): Gui
 		shop.Position = UDim2.fromScale(menu.buttonsX, top + menu.soonSize[2] + menu.soonGap)
 		leaderboard.Position =
 			UDim2.fromScale(menu.buttonsX, top + (menu.soonSize[2] + menu.soonGap) * 2)
+		dailyRewards.Position =
+			UDim2.fromScale(menu.buttonsX, top + (menu.soonSize[2] + menu.soonGap) * 3)
 	end
 	play:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeTiles)
 	panel:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeTiles)

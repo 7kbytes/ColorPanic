@@ -15,6 +15,8 @@ function DataRules.defaultProfile(): PlayerProfile
 		roundsSurvived = 0,
 		matchesPlayed = 0,
 		coins = 0,
+		lastClaimDay = 0,
+		streak = 0,
 	}
 end
 
@@ -38,6 +40,8 @@ function DataRules.sanitize(raw: any): PlayerProfile
 		roundsSurvived = sanitizeInt(raw.roundsSurvived, default.roundsSurvived),
 		matchesPlayed = sanitizeInt(raw.matchesPlayed, default.matchesPlayed),
 		coins = sanitizeInt(raw.coins, default.coins),
+		lastClaimDay = sanitizeInt(raw.lastClaimDay, default.lastClaimDay),
+		streak = sanitizeInt(raw.streak, default.streak),
 	}
 end
 
@@ -49,6 +53,8 @@ function DataRules.recordRoundSurvived(profile: PlayerProfile, coinsEarned: numb
 		roundsSurvived = profile.roundsSurvived + 1,
 		matchesPlayed = profile.matchesPlayed,
 		coins = profile.coins + coins,
+		lastClaimDay = profile.lastClaimDay,
+		streak = profile.streak,
 	}
 end
 
@@ -60,6 +66,8 @@ function DataRules.recordMatchVictory(profile: PlayerProfile, coinsEarned: numbe
 		roundsSurvived = profile.roundsSurvived,
 		matchesPlayed = profile.matchesPlayed,
 		coins = profile.coins + coins,
+		lastClaimDay = profile.lastClaimDay,
+		streak = profile.streak,
 	}
 end
 
@@ -70,6 +78,8 @@ function DataRules.recordMatchPlayed(profile: PlayerProfile): PlayerProfile
 		roundsSurvived = profile.roundsSurvived,
 		matchesPlayed = profile.matchesPlayed + 1,
 		coins = profile.coins,
+		lastClaimDay = profile.lastClaimDay,
+		streak = profile.streak,
 	}
 end
 
@@ -90,6 +100,8 @@ function DataRules.deductCoins(profile: PlayerProfile, amount: number): (boolean
 			roundsSurvived = profile.roundsSurvived,
 			matchesPlayed = profile.matchesPlayed,
 			coins = profile.coins - cost,
+			lastClaimDay = profile.lastClaimDay,
+			streak = profile.streak,
 		}
 end
 
@@ -104,6 +116,8 @@ function DataRules.copyInto(target: PlayerProfile, profile: PlayerProfile): Play
 	target.roundsSurvived = profile.roundsSurvived
 	target.matchesPlayed = profile.matchesPlayed
 	target.coins = profile.coins
+	target.lastClaimDay = profile.lastClaimDay
+	target.streak = profile.streak
 	return target
 end
 
@@ -114,11 +128,13 @@ end
 -- cheap way to compare two profiles in tests and in logs.
 function DataRules.signature(profile: PlayerProfile): string
 	return string.format(
-		"%d|%d|%d|%d",
+		"%d|%d|%d|%d|%d|%d",
 		profile.wins,
 		profile.roundsSurvived,
 		profile.matchesPlayed,
-		profile.coins
+		profile.coins,
+		profile.lastClaimDay,
+		profile.streak
 	)
 end
 

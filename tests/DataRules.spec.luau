@@ -130,7 +130,14 @@ describe("DataRules.canAfford and deductCoins", function()
 end)
 
 describe("DataRules.signature", function()
-	local base = { wins = 2, roundsSurvived = 7, matchesPlayed = 3, coins = 105 }
+	local base = {
+		wins = 2,
+		roundsSurvived = 7,
+		matchesPlayed = 3,
+		coins = 105,
+		lastClaimDay = 0,
+		streak = 0,
+	}
 
 	it("is the same for the same values", function()
 		expect(DataRules.signature(base)).toBe(DataRules.signature(table.clone(base)))
@@ -138,7 +145,9 @@ describe("DataRules.signature", function()
 
 	it("changes when any saved field changes", function()
 		local original = DataRules.signature(base)
-		for _, field in { "wins", "roundsSurvived", "matchesPlayed", "coins" } do
+		for _, field in
+			{ "wins", "roundsSurvived", "matchesPlayed", "coins", "lastClaimDay", "streak" }
+		do
 			local changed = table.clone(base)
 			changed[field] += 1
 			expect(DataRules.signature(changed) == original).toBe(false)
@@ -155,7 +164,14 @@ end)
 
 describe("DataRules.copyInto", function()
 	local function source()
-		return { wins = 4, roundsSurvived = 11, matchesPlayed = 6, coins = 250 }
+		return {
+			wins = 4,
+			roundsSurvived = 11,
+			matchesPlayed = 6,
+			coins = 250,
+			lastClaimDay = 19000,
+			streak = 3,
+		}
 	end
 
 	it("copies every saved field", function()
@@ -171,7 +187,14 @@ describe("DataRules.copyInto", function()
 	end)
 
 	it("overwrites values that were already there", function()
-		local target = { wins = 99, roundsSurvived = 99, matchesPlayed = 99, coins = 99 }
+		local target = {
+			wins = 99,
+			roundsSurvived = 99,
+			matchesPlayed = 99,
+			coins = 99,
+			lastClaimDay = 99,
+			streak = 99,
+		}
 		DataRules.copyInto(target, source())
 		expect(target.wins).toBe(4)
 		expect(target.coins).toBe(250)

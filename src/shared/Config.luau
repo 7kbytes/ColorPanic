@@ -379,6 +379,16 @@ local Config: Types.ConfigType = {
 		},
 	},
 
+	-- Daily rewards (A-08). One claim per UTC day, decided by the server clock.
+	Daily = {
+		-- Coins per day of the streak. The track repeats once it runs out, so day 8 pays
+		-- the first amount again. Day 7 is the one worth coming back for.
+		track = { 25, 40, 60, 80, 120, 180, 400 },
+		claimCooldown = 1, -- seconds between claim requests from one player
+		title = "DAILY REWARDS",
+		claimedMessage = "Come back tomorrow!",
+	},
+
 	-- All-time top players board in the lobby (A-04). Wins only: coins are earned every
 	-- round, so a coins board would mostly rank time played.
 	Leaderboard = {
@@ -474,6 +484,12 @@ local Config: Types.ConfigType = {
 		leaderboardRgb = { 230, 140, 30 },
 		-- The panel it opens, over the menu.
 		leaderboardPanelSize = { 0.44, 0.62 },
+		-- The Daily Rewards tile and its panel (A-08).
+		dailyRgb = { 150, 40, 200 },
+		dailyTileRgb = { 60, 60, 90 }, -- a day not reached yet
+		dailyDoneRgb = { 70, 130, 70 }, -- a day already claimed
+		dailyNextRgb = { 255, 214, 51 }, -- the day that claiming now would take
+		dailyClaimRgb = { 60, 170, 70 },
 		leaderboardRowHeight = 0.075, -- fraction of the panel, per row
 		howToSize = { 0.46, 0.58 },
 		howToCorner = { 0.97, 0.96 }, -- bottom right corner of the card
