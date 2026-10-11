@@ -111,3 +111,41 @@ describe("Config.Assets loading art", function()
 		end
 	end)
 end)
+
+describe("Config.Assets menu tile art", function()
+	local MENU_KEYS = { "menuDailyRewards", "menuLeaderboard", "menuShop", "menuSettings" }
+
+	it("has a valid ID for every menu tile", function()
+		for _, key in MENU_KEYS do
+			expect(isAssetId(Config.Assets.Images[key])).toBe(true)
+		end
+	end)
+
+	it("never points two tiles at the same image", function()
+		-- Four IDs pasted by hand in one go: a copy and paste slip would silently put the
+		-- wrong art on a button and still look deliberate.
+		local seen = {}
+		for _, key in MENU_KEYS do
+			local id = Config.Assets.Images[key]
+			expect(seen[id]).toBe(nil)
+			seen[id] = key
+		end
+	end)
+
+	it("does not reuse the Play or Leave art", function()
+		local images = Config.Assets.Images
+		for _, key in MENU_KEYS do
+			expect(images[key] == images.play).toBe(false)
+			expect(images[key] == images.leave).toBe(false)
+		end
+	end)
+
+	it("has an aspect ratio for every tile, and a plausible one", function()
+		-- The art is a wide pill. A tile taller than it is wide would mean the ratio was
+		-- entered upside down.
+		for _, ratio in Config.Menu.tileAspect do
+			expect(ratio > 1).toBe(true)
+			expect(ratio < 6).toBe(true)
+		end
+	end)
+end)
