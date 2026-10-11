@@ -64,3 +64,22 @@ describe("Util.getTileImageId", function()
 		expect(Util.getTileImageId(Config.Colors, shapeTiles, first.id)).toBe(nil)
 	end)
 end)
+
+describe("Config.Assets sky", function()
+	it("has six distinct skybox faces, or none at all", function()
+		local sky = Config.Assets.Images.sky
+		local faces = { sky.back, sky.down, sky.front, sky.left, sky.right, sky.up }
+		if sky.front == 0 then
+			for _, id in faces do
+				expect(id).toBe(0)
+			end
+			return
+		end
+		local seen = {}
+		for _, id in faces do
+			expect(isAssetId(id)).toBe(true)
+			expect(seen[id]).toBe(nil)
+			seen[id] = true
+		end
+	end)
+end)
