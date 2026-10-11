@@ -62,32 +62,37 @@ local function retry<T>(action: () -> T): (boolean, T?)
 	return false, nil
 end
 
+-- Returns the named folder under `parent`, creating it if it is missing.
+local function ensureFolder(parent: Instance, name: string): Instance
+	local existing = parent:FindFirstChild(name)
+	if existing then
+		return existing
+	end
+	local folder = Instance.new("Folder")
+	folder.Name = name
+	folder.Parent = parent
+	return folder
+end
+
+-- Returns the named IntValue under `parent`, replacing anything else of that name.
+local function ensureIntValue(parent: Instance, name: string): IntValue
+	local existing = parent:FindFirstChild(name)
+	if existing then
+		if existing:IsA("IntValue") then
+			return existing
+		end
+		existing:Destroy()
+	end
+	local value = Instance.new("IntValue")
+	value.Name = name
+	value.Parent = parent
+	return value
+end
+
 local function updateLeaderstats(player: Player, profile: PlayerProfile)
-	local leaderstats = player:FindFirstChild("leaderstats")
-	if not leaderstats then
-		local folder = Instance.new("Folder")
-		folder.Name = "leaderstats"
-		folder.Parent = player
-		leaderstats = folder
-	end
-
-	local winsValue = leaderstats:FindFirstChild("Wins")
-	if not (winsValue and winsValue:IsA("IntValue")) then
-		local val = Instance.new("IntValue")
-		val.Name = "Wins"
-		val.Parent = leaderstats
-		winsValue = val
-	end
-	(winsValue :: IntValue).Value = profile.wins
-
-	local coinsValue = leaderstats:FindFirstChild("Coins")
-	if not (coinsValue and coinsValue:IsA("IntValue")) then
-		local val = Instance.new("IntValue")
-		val.Name = "Coins"
-		val.Parent = leaderstats
-		coinsValue = val
-	end
-	(coinsValue :: IntValue).Value = profile.coins
+	local leaderstats = ensureFolder(player, "leaderstats")
+	ensureIntValue(leaderstats, "Wins").Value = profile.wins
+	ensureIntValue(leaderstats, "Coins").Value = profile.coins
 end
 
 local function loadProfile(player: Player): PlayerProfile
@@ -124,8 +129,10 @@ local function saveProfile(player: Player)
 	end
 	local key = "player_" .. tostring(player.UserId)
 	if dataStoreAvailable and dataStore then
+		local store = dataStore :: GlobalDataStore
 		retry(function()
-			(dataStore :: GlobalDataStore):SetAsync(key, profile)
+			store:SetAsync(key, profile)
+			return true -- retry expects the action to return a value
 		end)
 	end
 end
