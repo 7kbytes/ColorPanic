@@ -7,6 +7,9 @@ local Remotes = require(ReplicatedStorage.Shared.Remotes)
 
 Remotes.initServer()
 
+local DataService = require(script.Parent.DataService)
+DataService.start()
+
 -- Before MatchService, so the props count in the reset audit's part baseline.
 local LookService = require(script.Parent.LookService)
 LookService.start()

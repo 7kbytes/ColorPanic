@@ -436,6 +436,20 @@ local Config: Types.ConfigType = {
 		shorterFromRound = 10,
 	},
 
+	-- Player persistence and DataStore configuration.
+	Data = {
+		dataStoreKey = "ColorPanic_v1",
+		autoSaveSeconds = 120,
+		maxRetries = 3,
+		retryDelaySeconds = 2,
+	},
+
+	-- Rewards granted on gameplay events.
+	Rewards = {
+		coinsPerRound = 5,
+		coinsPerWin = 50,
+	},
+
 	-- Draft values from SPEC section 5. lastRound = nil means open-ended.
 	-- The timer moves linearly from timerStart to timerEnd across the row's rounds.
 	-- revealSeconds: reveal-then-hide from round 4, shorter from round 10 (SPEC section 5).
