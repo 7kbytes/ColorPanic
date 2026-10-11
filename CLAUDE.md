@@ -45,6 +45,17 @@ We are now on the 3-day demo build. Demo tasks use branches named `demo/<task-id
 
 In progress: D-11 QA on a published private copy with 4 or more players. The checklist is `qa/demo-qa.md`; the producer runs it with real players, then reports Fail rows for fixing before the freeze. Watch whether 60% tiles by round 8 are too hard (Config.Shrink).
 
+Slice 2 has started with the 3D models (producer approved, branches `slice2/<task-id>-<short-name>`, merge only after the D-11 playtest). Open pull requests, merge in this order:
+
+- #41 3D-00 `models/` mapped into Workspace, builder rules checker (`tests/ModelRules.luau`)
+- #42 3D-01 Blender prep for the Meshy AI lobby models (`tools/blender/prep_models.py`); independent of the others
+- #43 3D-02 `models/Lobby.rbxm`, lobbyOrigin moved to y 45
+- #44 3D-03 Skybox (`Config.Assets.Images.sky`, added by LookController)
+- #45 3D-04 Spectator balcony, arena island, cloud sea; spectatorOrigin moved to z -70
+- 3D-05 these docs and the slice 2 QA record (`qa/slice2-3d-qa.md`)
+
+`slice2/integration` merges all of them, so the whole build can be synced and played before merging. The Shop Kiosk model was left out (it would show a shop the game does not have). Open producer questions: the Meshy licence plan, whether blue palm leaves (green was recoloured) are wanted.
+
 Design reference: the concept board (not final art). Color and shape pairs follow art/palette.json, not the concept board (producer decision). No new features after midday on day 3. The README now describes the demo build.
 
 Open issues: #15 (cause found, waiting to be closed), #16 (a playtest need, not a bug), #17 is closed (fixed in D-06).
