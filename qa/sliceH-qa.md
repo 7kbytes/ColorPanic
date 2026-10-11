@@ -94,3 +94,24 @@ command bar, let 5 or more matches play, then run `_G.soakdump()` and paste the 
 
 Not covered: a soak with more than 2 clients, which needs H-04 and real players, and a soak
 long enough to cross ProfileStore's own autosave interval.
+
+### H-05 live rows: still to run, but the way in is known
+
+2026-10-11. The live rows were not run. Recording how to reach Studio, so the next attempt
+does not spend the time this one did working it out.
+
+- The Studio MCP proxy is `StudioMCP.exe`, launched by `%LOCALAPPDATA%\Roblox\mcp.bat`. It
+  answers plain JSON-RPC on stdio, so it can be driven without the harness loading
+  `.mcp.json`, which only happens when a session starts.
+- **The proxy process has to stay alive.** Studio registers with whichever proxy is listening,
+  and that takes a few seconds. A proxy spawned per call reports `{"studios":[]}` every time
+  and looks like a broken bridge. Hold one process open, wait about 10 seconds, then call.
+- Studio also has to have been started after `Enable Studio as MCP server` was turned on, under
+  Assistant, Manage MCP Servers. Toggling it does not attach an already running instance.
+- Once attached, `list_roblox_studios` returns a studio id that every other tool needs. The
+  useful tools for the soak are `execute_luau`, `get_console_output`, `start_stop_play` and
+  `get_studio_state`.
+- Driving Play from the MCP gives a solo session, so a soak run that way needs
+  `Config.Match.studioSinglePlayerEnabled` set locally, and it will not exercise elimination
+  with several survivors. Leaked tiles are likeliest there, so a 2 client pass is still worth
+  doing by hand.
