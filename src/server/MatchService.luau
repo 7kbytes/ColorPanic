@@ -14,6 +14,7 @@ local Broadcast = require(script.Parent.Broadcast)
 local DataService = require(script.Parent.DataService)
 local EliminationRules = require(script.Parent.EliminationRules)
 local EliminationService = require(script.Parent.EliminationService)
+local LeaderboardService = require(script.Parent.LeaderboardService)
 local MatchFlow = require(script.Parent.MatchFlow)
 local MatchResults = require(script.Parent.MatchResults)
 local PlacementService = require(script.Parent.PlacementService)
@@ -276,6 +277,14 @@ local function onEnter(previous: MatchState, nextState: MatchState)
 	elseif nextState == "Victory" then
 		local winners = getSurvivorList()
 		DataService.awardMatchWinners(winners)
+		-- After the award, so the total written to the top players board is the new one.
+		-- Done here rather than inside DataService to keep saving and the board separate.
+		for _, winner in winners do
+			local profile = DataService.getProfile(winner)
+			if profile then
+				LeaderboardService.recordWins(winner, profile.wins)
+			end
+		end
 		table.sort(winners, function(a, b)
 			return a.DisplayName < b.DisplayName
 		end)

@@ -19,6 +19,10 @@ LookService.start()
 local PropCollision = require(script.Parent.PropCollision)
 PropCollision.start()
 
+-- Also before MatchService: the board is a part, and the reset audit counts parts.
+local LeaderboardService = require(script.Parent.LeaderboardService)
+LeaderboardService.start()
+
 local MatchService = require(script.Parent.MatchService)
 MatchService.start()
 
