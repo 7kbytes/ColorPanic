@@ -107,11 +107,13 @@ local function requireProxy(proxy: any): any
 	assert(path, "Harness: " .. fullName(proxy) .. " has no script file")
 
 	if cache[path] == nil then
-		local env = setmetatable({
+		-- Lune still resolves builtins (print, table, math, ...) for a custom environment, so
+		-- only the Roblox-style globals need to be provided.
+		local env = {
 			script = proxy,
 			game = game,
 			require = requireProxy,
-		}, { __index = _G })
+		}
 		local chunk = luau.load(fs.readFile(path), { debugName = path, environment = env })
 		cache[path] = chunk()
 	end
