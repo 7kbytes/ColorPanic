@@ -311,9 +311,13 @@ export type ConfigType = {
 	Difficulty: { DifficultyRow },
 	Data: {
 		dataStoreKey: string,
-		autoSaveSeconds: number,
 		maxRetries: number,
 		retryDelaySeconds: number,
+		Session: {
+			heldElsewhereMessage: string,
+			takenOverMessage: string,
+			startTimeoutSeconds: number,
+		},
 	},
 	Rewards: {
 		coinsPerRound: number,

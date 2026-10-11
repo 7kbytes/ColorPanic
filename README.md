@@ -41,8 +41,15 @@ Out of scope for the demo: shove, spectator pranks, saved data, custom chat, mon
    rokit install
    ```
 
-   Rokit asks you to trust each tool the first time. Pinned versions live in `rokit.toml` (Rojo, StyLua, Selene, luau-lsp, Lune).
-3. Install the Rojo plugin in Roblox Studio. Its version should match the Rojo version in `rokit.toml`.
+   Rokit asks you to trust each tool the first time. Pinned versions live in `rokit.toml` (Rojo, StyLua, Selene, luau-lsp, Lune, Wally).
+3. Install the one package the game depends on:
+
+   ```bash
+   wally install
+   ```
+
+   This creates `ServerPackages/`, which is not in git. `wally.lock` pins the exact version, so everyone gets the same one. Without this step the game still runs, but player data is held in memory and never saved, and the server log says so.
+4. Install the Rojo plugin in Roblox Studio. Its version should match the Rojo version in `rokit.toml`.
 
 ## Build and run
 

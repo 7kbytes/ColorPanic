@@ -439,9 +439,21 @@ local Config: Types.ConfigType = {
 	-- Player persistence and DataStore configuration.
 	Data = {
 		dataStoreKey = "ColorPanic_v1",
-		autoSaveSeconds = 120,
 		maxRetries = 3,
 		retryDelaySeconds = 2,
+
+		-- Player data sessions. ProfileStore locks a profile to one server, so these cover
+		-- what we do when a lock cannot be taken or is taken away from us.
+		Session = {
+			-- Shown when another server holds this player's profile. Rejoining lands them
+			-- on a server that can take the lock, usually the one they just left.
+			heldElsewhereMessage = "Your saved data is still in use on another server."
+				.. " Please rejoin in a moment.",
+			-- Shown when another server took the profile over while they were playing.
+			takenOverMessage = "Your saved data was opened on another server." .. " Please rejoin.",
+			-- How long to wait for a session before giving up on it, in seconds.
+			startTimeoutSeconds = 30,
+		},
 	},
 
 	-- Rewards granted on gameplay events.

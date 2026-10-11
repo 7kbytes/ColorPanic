@@ -1,0 +1,13 @@
+[package]
+name = "7kbytes/colorpanic"
+description = "Color Panic, a Roblox color tile elimination game"
+version = "0.1.0"
+license = "Apache-2.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+# ProfileStore gives player data session locking: one server at a time holds a
+# profile, so two servers cannot save over each other. It is a server-realm
+# package, so it installs into ServerPackages/ and never replicates to clients.
+[server-dependencies]
+ProfileStore = "lm-loleris/profilestore@1.0.3"

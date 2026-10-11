@@ -18,3 +18,8 @@ sourcemap.json
 
 # Python bytecode (tools/blender)
 __pycache__/
+
+# Wally packages (run `wally install`; wally.lock pins the versions)
+/Packages/
+/ServerPackages/
+/DevPackages/

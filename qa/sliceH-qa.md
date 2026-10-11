@@ -35,8 +35,31 @@ change.
 
 ## Not covered
 
-- Two players saving at once, and two servers holding the same player (no session locking yet;
-  the spec calls for a session-locking library in slice 5).
+- Two players saving at once, and two servers holding the same player. Session locking was
+  added afterwards in P1-02; see H-02 below.
 - Autosave on the 120 second timer was not waited out; save on leave and on close were the
-  paths exercised.
+  paths exercised. P1-02 handed autosaving to ProfileStore, so that timer is gone.
 - Real DataStore throttling under load.
+
+## H-02 Session locking (P1-02), to run
+
+ProfileStore now holds each profile on one server at a time. Rows 1 to 6 can be run in
+Studio. **Rows 7 to 9 cannot**: they need two servers holding the same profile, and Studio
+only ever runs one. Run those on the published place with two real servers, by joining on
+one device, leaving and rejoining fast, or by joining the same place from two devices while
+Roblox has you on different servers.
+
+| # | Check | Expected | Result |
+| --- | --- | --- | --- |
+| 1 | Join with API Services on | `[Data] Loaded <name>: N wins, N coins (live)` | |
+| 2 | Win a match, then leave and rejoin | Wins and coins come back, same as H-01 | |
+| 3 | API Services off, join | `[Data] DataStore did not answer; running in memory with saving off`, then `(cache)`. Game plays. Nobody is kicked. | |
+| 4 | API Services off, win a match, rejoin | Rewards show in the session but are gone after rejoin, and stored data is untouched | |
+| 5 | API Services back on | `(live)` again, and the data from row 2 is intact | |
+| 6 | `ServerPackages/` deleted, join | Warns that ProfileStore is not installed, runs in `(cache)`, no crash | |
+| 7 | Leave and rejoin within a second or two | Loads normally. The old server hands the lock over rather than both saving. | |
+| 8 | Same account on two servers at once | The second join is kicked with "Your saved data is still in use on another server", or the first is kicked with "...was opened on another server". Either is correct; note which. | |
+| 9 | Earn coins on server A, then get taken over by server B | No progress is lost or doubled. Check the totals after both servers are empty. | |
+
+Not covered even by the above: real DataStore throttling under load, and what happens when
+ProfileStore's own retries outlast the 30 second session timeout in `Config.Data.Session`.
