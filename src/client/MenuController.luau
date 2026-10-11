@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local LeaderboardRules = require(ReplicatedStorage.Shared.LeaderboardRules)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
 local HUDController = require(script.Parent.HUDController)
@@ -127,6 +128,82 @@ local function makeSoonTile(name: string, rgb: { number }): Frame
 	return tile
 end
 
+-- The top players panel (A-05), opened from the menu's Leaderboard tile.
+--
+-- The server sends the rows; this only draws them. The same rows are on the board in the
+-- lobby, so the two can never disagree.
+local function makeLeaderboardPanel(parent: Instance): (Frame, (Types.LeaderboardPayload) -> ())
+	local menu = Config.Menu
+	local board = Config.Leaderboard
+	local panel = UiStyle.makePanel(
+		"Leaderboard",
+		menu.leaderboardPanelSize,
+		Vector2.new(0.5, 0.5),
+		UDim2.fromScale(0.5, 0.5)
+	)
+	panel.Visible = false
+	panel.Parent = parent
+
+	local title = UiStyle.makeText("Title", panel, UiStyle.HEADING_FONT)
+	title.Size = UDim2.fromScale(1, 0.12)
+	title.Text = board.title
+	title.TextColor3 = UiStyle.toColor3(board.titleRgb)
+
+	-- One row of labels per place, filled on every update.
+	local rows: { { left: TextLabel, right: TextLabel } } = {}
+	for index = 1, board.topCount do
+		local y = 0.14 + (index - 1) * menu.leaderboardRowHeight
+		local left = UiStyle.makeText("Row" .. index, panel, UiStyle.BODY_FONT)
+		left.Position = UDim2.fromScale(0, y)
+		left.Size = UDim2.fromScale(0.75, menu.leaderboardRowHeight)
+		left.TextXAlignment = Enum.TextXAlignment.Left
+		local right = UiStyle.makeText("Wins" .. index, panel, UiStyle.BODY_FONT)
+		right.Position = UDim2.fromScale(0.75, y)
+		right.Size = UDim2.fromScale(0.25, menu.leaderboardRowHeight)
+		right.TextXAlignment = Enum.TextXAlignment.Right
+		table.insert(rows, { left = left, right = right })
+	end
+
+	-- Sits over the rows when there is nothing to show.
+	local status = UiStyle.makeText("Status", panel, UiStyle.BODY_FONT)
+	status.Position = UDim2.fromScale(0, 0.42)
+	status.Size = UDim2.fromScale(1, 0.14)
+	status.Visible = false
+
+	local close = UiStyle.makeButton("Close", "Close", menu.leaderboardRgb)
+	close.AnchorPoint = Vector2.new(0.5, 1)
+	close.Position = UDim2.fromScale(0.5, 1)
+	close.Size = UDim2.fromScale(0.4, 0.11)
+	close.Parent = panel
+	close.Activated:Connect(function()
+		panel.Visible = false
+	end)
+
+	local function update(payload: Types.LeaderboardPayload)
+		local message = LeaderboardRules.statusMessage(
+			payload.offline,
+			#payload.rows,
+			board.offlineMessage,
+			board.emptyMessage
+		)
+		status.Visible = message ~= nil
+		status.Text = message or ""
+		for index, labels in rows do
+			local row = payload.rows[index]
+			if row and not message then
+				local left, right = LeaderboardRules.rowText(row, board.maxNameLength)
+				labels.left.Text = left
+				labels.right.Text = right
+			else
+				labels.left.Text = ""
+				labels.right.Text = ""
+			end
+		end
+	end
+
+	return panel, update
+end
+
 -- How to play (D-09): the tagline, three steps, and every color with its shape, from Config.
 local function makeHowToCard(parent: Instance)
 	local menu = Config.Menu
@@ -232,10 +309,20 @@ local function buildGui(): Gui
 	play.Parent = panel
 	local settings = makeSoonTile("Settings", menu.settingsRgb)
 	local shop = makeSoonTile("Shop", menu.shopRgb)
-	for _, tile in { settings, shop } do
+	-- Unlike the two above, this one works, so it is a button at full strength (A-05).
+	local leaderboard = UiStyle.makeButton("Leaderboard", "Leaderboard", menu.leaderboardRgb)
+	-- A Frame for the two greyed tiles and a TextButton for the working one, so the list is
+	-- typed by what they have in common.
+	for _, tile in { settings, shop, leaderboard } :: { GuiObject } do
 		tile.Size = UDim2.fromScale(menu.soonSize[1], menu.soonSize[2])
 		tile.Parent = panel
 	end
+
+	local leaderboardPanel, updateLeaderboard = makeLeaderboardPanel(panel)
+	leaderboard.Activated:Connect(function()
+		leaderboardPanel.Visible = not leaderboardPanel.Visible
+	end)
+	Remotes.LeaderboardUpdated.connect(updateLeaderboard)
 	-- The Play button's height follows its art, so the tiles are placed from its drawn size.
 	local function placeTiles()
 		local panelHeight = panel.AbsoluteSize.Y
@@ -243,6 +330,8 @@ local function buildGui(): Gui
 		local top = menu.playY + playHeight + menu.soonGap
 		settings.Position = UDim2.fromScale(menu.buttonsX, top)
 		shop.Position = UDim2.fromScale(menu.buttonsX, top + menu.soonSize[2] + menu.soonGap)
+		leaderboard.Position =
+			UDim2.fromScale(menu.buttonsX, top + (menu.soonSize[2] + menu.soonGap) * 2)
 	end
 	play:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeTiles)
 	panel:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeTiles)

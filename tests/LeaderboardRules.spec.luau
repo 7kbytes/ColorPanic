@@ -163,3 +163,20 @@ describe("The board's place in the world", function()
 		expect(Config.Leaderboard.topCount <= 100).toBe(true)
 	end)
 end)
+
+describe("LeaderboardRules.statusMessage", function()
+	it("says nothing when there are rows to show", function()
+		expect(LeaderboardRules.statusMessage(false, 5, "offline", "empty")).toBe(nil)
+	end)
+
+	it("tells an empty board apart from an unreachable one", function()
+		-- These look identical on screen and mean completely different things: nobody has
+		-- won yet, versus we could not reach the store.
+		expect(LeaderboardRules.statusMessage(false, 0, "offline", "empty")).toBe("empty")
+		expect(LeaderboardRules.statusMessage(true, 0, "offline", "empty")).toBe("offline")
+	end)
+
+	it("says offline even if stale rows are still in hand", function()
+		expect(LeaderboardRules.statusMessage(true, 5, "offline", "empty")).toBe("offline")
+	end)
+end)

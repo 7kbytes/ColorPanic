@@ -334,6 +334,9 @@ export type ConfigType = {
 		soonTransparency: number,
 		settingsRgb: { number },
 		shopRgb: { number },
+		leaderboardRgb: { number },
+		leaderboardPanelSize: { number },
+		leaderboardRowHeight: number,
 		howToSize: { number },
 		howToCorner: { number },
 		buttonRgb: { number },
@@ -445,6 +448,21 @@ export type MatchResultPayload = {
 
 export type PlayerDataPayload = {
 	profile: PlayerProfile,
+}
+
+-- One line of the top players board (A-04). Tied players share a place.
+export type LeaderboardRow = {
+	place: number,
+	name: string,
+	wins: number,
+}
+
+-- The top players, sent to every client so the menu panel and the board in the lobby show
+-- the same thing. `offline` means the DataStore could not be reached, which is not the same
+-- as nobody having won yet: the panel says so rather than showing an empty board.
+export type LeaderboardPayload = {
+	rows: { LeaderboardRow },
+	offline: boolean,
 }
 
 return {}
