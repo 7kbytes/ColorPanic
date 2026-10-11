@@ -1,0 +1,19 @@
+{
+  "note": "Asset prep targets for the M-01 lobby models (Meshy AI exports). Used by tools/blender/prep_models.py. Sizes are the largest dimension in studs; triangles are the target after decimation; texture is the base colour size in pixels; recolorGreen names the palette colour that replaces green.",
+  "models": [
+    { "source": "Main_Floating_Island", "name": "IslandBase", "triangles": 10000, "size": 90, "texture": 1024, "recolorGreen": "Yellow" },
+    { "source": "Top_Surface_Trim", "name": "IslandTop", "triangles": 4000, "size": 70, "texture": 1024, "recolorGreen": null },
+    { "source": "Spawn_Pad", "name": "SpawnPad", "triangles": 2000, "size": 5, "texture": 512, "recolorGreen": null },
+    { "source": "Marker_Pillar", "name": "MarkerPillar", "triangles": 1000, "size": 8, "texture": 512, "recolorGreen": null },
+    { "source": "Central_Platform", "name": "CentralPlatform", "triangles": 6000, "size": 14, "texture": 1024, "recolorGreen": null },
+    { "source": "Entrance_Arch_Sign", "name": "EntranceArch", "triangles": 8000, "size": 30, "texture": 1024, "recolorGreen": "Yellow" },
+    { "source": "Palm_Tree", "name": "PalmTree", "triangles": 3000, "size": 22, "texture": 1024, "recolorGreen": "Blue" },
+    { "source": "Rocks_and_Flowers", "name": "RocksAndFlowers", "triangles": 3000, "size": 8, "texture": 512, "recolorGreen": "Blue" },
+    { "source": "Waterfall_Section", "name": "Waterfall", "triangles": 5000, "size": 18, "texture": 1024, "recolorGreen": null },
+    { "source": "Lamp_Post", "name": "LampPost", "triangles": 2000, "size": 12, "texture": 512, "recolorGreen": null },
+    { "source": "Cloud", "name": "Cloud", "triangles": 2000, "size": 40, "texture": 512, "recolorGreen": null }
+  ],
+  "excluded": [
+    { "source": "Shop_Kiosk", "reason": "The workbook lists a shop stall as not needed: it would misrepresent the game while the Shop is Coming soon." }
+  ]
+}
