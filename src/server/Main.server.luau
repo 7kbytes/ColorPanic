@@ -23,6 +23,9 @@ PropCollision.start()
 local LeaderboardService = require(script.Parent.LeaderboardService)
 LeaderboardService.start()
 
+local DailyRewardsService = require(script.Parent.DailyRewardsService)
+DailyRewardsService.start()
+
 local MatchService = require(script.Parent.MatchService)
 MatchService.start()
 
