@@ -11,5 +11,24 @@
       "RocksAndFlowers": 2999,
       "LampPost": 2000
     }
+  },
+  "SpectatorArea": {
+    "meshes": {
+      "IslandBase": 10000,
+      "IslandTop": 4000,
+      "SpawnPad": 2000,
+      "MarkerPillar": 999,
+      "LampPost": 2000
+    }
+  },
+  "ArenaIsland": {
+    "meshes": {
+      "IslandBase": 10000
+    }
+  },
+  "CloudSea": {
+    "meshes": {
+      "Cloud": 2000
+    }
   }
 }
