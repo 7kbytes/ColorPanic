@@ -51,6 +51,7 @@ local baseShadeColor =
 
 local function decorateTile(tile: Part, tileColor: Color3)
 	local tileSize = tile.Size.X -- already scaled for shrinking rounds
+	tile.CastShadow = Config.Look.shadow.tiles
 	if glossTexture then
 		for _, face in SIDE_FACES do
 			local gloss = Instance.new("Texture")

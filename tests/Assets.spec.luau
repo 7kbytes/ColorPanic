@@ -66,7 +66,7 @@ describe("Util.getTileImageId", function()
 end)
 
 describe("Config.Assets sky", function()
-	it("has six distinct skybox faces, or none at all", function()
+	it("has six valid skybox faces, or none at all", function()
 		local sky = Config.Assets.Images.sky
 		local faces = { sky.back, sky.down, sky.front, sky.left, sky.right, sky.up }
 		if sky.front == 0 then
@@ -75,11 +75,23 @@ describe("Config.Assets sky", function()
 			end
 			return
 		end
-		local seen = {}
 		for _, id in faces do
 			expect(isAssetId(id)).toBe(true)
-			expect(seen[id]).toBe(nil)
-			seen[id] = true
 		end
+	end)
+
+	-- The seamless scheme (tools/blender/prep_skybox.py) puts the same picture on back and
+	-- front, and the same mirrored picture on left and right. Sharing one asset per pair
+	-- means four textures in memory instead of six.
+	it("shares one asset between back and front, and between left and right", function()
+		local sky = Config.Assets.Images.sky
+		if sky.front == 0 then
+			return
+		end
+		expect(sky.back).toBe(sky.front)
+		expect(sky.left).toBe(sky.right)
+		expect(sky.up == sky.front).toBe(false)
+		expect(sky.up == sky.left).toBe(false)
+		expect(sky.down == sky.front).toBe(false)
 	end)
 end)

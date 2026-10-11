@@ -127,6 +127,12 @@ local function makeButton(name: string, text: string, rgb: { number }): TextButt
 	sizeLimit.MinTextSize = HUD.minTextSize
 	sizeLimit.MaxTextSize = HUD.maxTextSize
 	sizeLimit.Parent = button
+	-- Buttons are sized as a fraction of the screen, so on a phone they shrink with it. This
+	-- keeps every one of them big enough to tap (Config.Touch).
+	local touchSize = Instance.new("UISizeConstraint")
+	local minPixels = Config.Touch.minButtonPixels
+	touchSize.MinSize = Vector2.new(minPixels, minPixels)
+	touchSize.Parent = button
 	local stroke = Instance.new("UIStroke")
 	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
 	stroke.Color = toColor3(HUD.strokeRgb)

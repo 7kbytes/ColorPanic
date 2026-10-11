@@ -140,6 +140,9 @@ export type ConfigType = {
 		leaveWidth: number,
 		leaveAspect: number,
 	},
+	Touch: {
+		minButtonPixels: number,
+	},
 	Spectate: {
 		dimTransparency: number,
 		dimRgb: { number },
@@ -150,6 +153,7 @@ export type ConfigType = {
 		quietButtonRgb: { number },
 		eliminatedRgb: { number },
 		spectateButtonSize: { number },
+		barMinPixels: { number },
 	},
 	Results: {
 		size: { number },
@@ -209,6 +213,11 @@ export type ConfigType = {
 			topBelowArena: number,
 		},
 		platformReflectance: number,
+		shadow: {
+			sceneryMinPartSize: number,
+			tiles: boolean,
+			props: boolean,
+		},
 		confetti: { pieces: number, seconds: number, sizePixels: number },
 	},
 	Audio: {

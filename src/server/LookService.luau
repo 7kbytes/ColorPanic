@@ -10,6 +10,8 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Util = require(ReplicatedStorage.Shared.Util)
 
 local FOLDER_NAME = "ArenaProps"
+-- The models Rojo maps into Workspace from models/ (slice 2 scenery).
+local SCENERY_MODELS = { "Lobby", "SpectatorArea", "ArenaIsland", "CloudSea" }
 
 local LookService = {}
 
@@ -20,8 +22,32 @@ local function decorative(part: BasePart)
 	part.CanCollide = false
 	part.CanQuery = false
 	part.CanTouch = false
+	part.CastShadow = Config.Look.shadow.props
 	part.Material = Enum.Material.SmoothPlastic
 	part.Reflectance = Config.Look.tile.reflectance
+end
+
+-- Stops small scenery from casting shadows (phone pass). Roblox's own advice is to turn
+-- CastShadow off on small and distant parts; here that is everything except the big island
+-- meshes, whose shadow on the cloud sea is what makes the islands look like they float.
+local function applySceneryShadows()
+	local minSize = Config.Look.shadow.sceneryMinPartSize
+	local cleared = 0
+	for _, modelName in SCENERY_MODELS do
+		local model = workspace:FindFirstChild(modelName)
+		if model then
+			for _, descendant in model:GetDescendants() do
+				if descendant:IsA("BasePart") and descendant.CastShadow then
+					local size = descendant.Size
+					if math.max(size.X, size.Y, size.Z) < minSize then
+						descendant.CastShadow = false
+						cleared += 1
+					end
+				end
+			end
+		end
+	end
+	print(string.format("[Look] Shadow casting off on %d small scenery parts", cleared))
 end
 
 function LookService.start()
@@ -69,6 +95,8 @@ function LookService.start()
 
 	folder.Parent = workspace
 	print(string.format("[Look] Built %d arena props", props.count))
+
+	applySceneryShadows()
 end
 
 return LookService

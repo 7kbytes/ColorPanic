@@ -208,6 +208,13 @@ local Config: Types.ConfigType = {
 	},
 
 	-- Eliminated card and spectate bar (D-14). Same panel style as the HUD.
+	-- Touch targets. The UI brief asks for roughly 48 pixels or more on a phone; without a
+	-- floor, scale-sized buttons shrink with the screen (the spectate arrows measured 46 x 19
+	-- on an emulated iPhone XR). UiStyle.makeButton puts this minimum on every button.
+	Touch = {
+		minButtonPixels = 48,
+	},
+
 	Spectate = {
 		dimTransparency = 0.45, -- the backdrop behind the eliminated card
 		dimRgb = { 10, 8, 24 },
@@ -218,6 +225,8 @@ local Config: Types.ConfigType = {
 		eliminatedRgb = { 232, 56, 61 }, -- the "Eliminated!" ribbon
 		quietButtonRgb = { 90, 84, 130 }, -- Close, Stop and the arrows
 		spectateButtonSize = { 0.16, 0.08 }, -- the Spectate button for mid-match joiners
+		-- The bar has to stay big enough for 48 pixel buttons and their padding.
+		barMinPixels = { 420, 56 },
 	},
 
 	-- Match results panel (D-15), shown during Victory. Same panel style as the HUD.
@@ -277,6 +286,15 @@ local Config: Types.ConfigType = {
 			topBelowArena = 4, -- studs the ball top sits below the tiles, clear of the view
 		},
 		platformReflectance = 0.08, -- lobby and spectator platforms
+		-- Shadow casting (phone pass). Roblox turns shadows off below graphics quality 4, so
+		-- phones rarely see these at all, and each caster costs shadow map work on every
+		-- device. Only the big island meshes still cast: their shadow on the cloud sea is what
+		-- makes the islands read as floating.
+		shadow = {
+			sceneryMinPartSize = 50, -- studs; scenery smaller than this on every axis stops casting
+			tiles = false, -- arena tiles
+			props = false, -- the lollipop prop ring
+		},
 		-- Confetti burst on the screen at Victory, client only.
 		confetti = {
 			pieces = 36,
@@ -345,11 +363,13 @@ local Config: Types.ConfigType = {
 			-- Skybox faces (S-03). Rebuilt seamless from the Meshy sky by
 			-- tools/blender/prep_skybox.py: the four sides are one image, mirrored on left and
 			-- right, so every vertical join matches. 0 keeps Roblox's default sky.
+			-- Back and front are the same picture, and left and right are the same mirrored
+			-- picture, so each pair shares one asset: four textures in memory instead of six.
 			sky = {
-				back = 92600114679518,
+				back = 137745245061893,
 				down = 116911200471107,
 				front = 137745245061893,
-				left = 90469773318979,
+				left = 105984525318116,
 				right = 105984525318116,
 				up = 121629052804340,
 			},
