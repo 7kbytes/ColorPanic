@@ -5,7 +5,7 @@ Read `SPEC.md` fully before doing anything. It holds the requirements, architect
 ## Working rules
 
 - Work on one task at a time. Before writing code for a task, propose your plan in a few lines and wait for the producer to approve it.
-- One branch and one small pull request per task, named `slice1/<task-id>-<short-name>`.
+- One branch and one small pull request per task, named `<slice>/<task-id>-<short-name>`, for example `slice5/P1-02-session-locking`. Slices used so far: `slice1`, `demo`, `slice2`, `slice5`, `sliceH` (harden to playable).
 - Use `--!strict` on core modules. Format with StyLua and lint with Selene before opening a pull request.
 - Put every tunable number in `shared/Config`. No magic numbers in services.
 - The server decides all outcomes. The client renders and sends requests; the server validates every request.
@@ -18,47 +18,44 @@ Read `SPEC.md` fully before doing anything. It holds the requirements, architect
 
 ## Current status
 
-Slice 1 (S1-01 to S1-11) is merged to `main`. The S1-11 QA record is in `qa/slice1-qa.md`.
+Last updated 2026-10-11, after P1-02.
 
-We are now on the 3-day demo build. Demo tasks use branches named `demo/<task-id>-<short-name>` (producer approved). Merged to `main`:
+### Merged to `main`
 
-- D-01 Respawn and late-join placement (fixed #14), with a lobby SpawnLocation fallback and the `MatchRole` player attribute
-- D-02 Final palette in `shared/Config`, from `art/palette.json`
-- D-03 Elimination decision log (#15 traced to the QA actor, which now walks)
-- D-04 Demo preset (`ACTIVE_PRESET` in Config) with a round cap of 8
-- D-16 Menu overlay and join queue (players start in the menu; only queued players count)
-- D-05 Reveal-then-hide
-- D-06 HUD with real assets (fixed #17)
-- D-03b Shape markers on tiles and the HUD target card
-- D-12 Round intro and intermission banners
-- D-13 Lobby panel (players ready, Leave with the Back art)
-- D-14 Eliminated card and watch-only spectating
-- D-15 Match results panel
-- D-08 Audio (sound effects and music)
-- D-07 Arena look (lighting kept near defaults so tiles keep their palette hues)
+- **Slice 1** (S1-01 to S1-11), the core loop. QA record in `qa/slice1-qa.md`.
+- **The 3-day demo build** (D-01 to D-16, branches `demo/<task-id>-<short-name>`): respawn and late-join placement with a lobby SpawnLocation fallback and the `MatchRole` player attribute (D-01, fixed #14); the final palette in `shared/Config` from `art/palette.json` (D-02); the elimination decision log (D-03); the demo preset with a round cap of 8, `ACTIVE_PRESET` in Config (D-04); reveal-then-hide (D-05); HUD with real assets (D-06, fixed #17); shape markers on tiles and the target card (D-03b); arena look, lighting kept near defaults so tiles keep their palette hues (D-07); audio (D-08); the title screen and concept polish (D-09, D-09b); shrinking tiles from round 4, `Config.Shrink` (D-10); banners (D-12); the lobby panel (D-13); the eliminated card and watch-only spectating (D-14); the results panel (D-15); the menu overlay and join queue, so players start in the menu and only queued players count (D-16).
+- **Slice 2, the 3D models** (3D-00 to 3D-08, #41 to #49, branches `slice2/<task-id>-<short-name>`): `models/` mapped into Workspace with a builder rules checker (`tests/ModelRules.luau`); Blender prep for the Meshy models (`tools/blender/prep_models.py`); the lobby island, with lobbyOrigin at y 45; the skybox (`Config.Assets.Images.sky`); the spectator balcony, arena island and cloud sea, with spectatorOrigin at z -70; three flow fixes (streaming off, the menu camera orbiting the lobby, seamless skybox); the game page draft (`docs/game-page.md`); and the phone pass. QA record in `qa/slice2-3d-qa.md`. The Shop Kiosk model was left out: it would show a shop the game does not have.
+- **P1-01 player persistence** (#50, branch `slice5/P1-01-data-service`): DataService, DataRules, rewards and leaderstats.
 
-- D-09 Title screen in the concept board layout, "Red Heart" target naming, blue panels
+### Open pull requests
 
-- D-09b Concept polish (lobby panel top centre, spectator mode, eliminated ribbon, winner title)
+Stacked, so merge in this order:
 
-- D-10 Shrinking tiles from round 4 in the demo preset (Config.Shrink; merged before D-11 on the producer's call)
+- **#51 H-01** (`sliceH/H-01-verify-persistence`), Studio verification of P1-01, plus the two data bugs it exposed: a failed read could be saved over real stored data, and an autosave wrote whether or not anything had changed.
+- **#52 P1-02** (`slice5/P1-02-session-locking`), based on #51. ProfileStore through Wally for player data session locking, with the decisions in the pure `shared/SessionRules`.
 
-In progress: D-11 QA on a published private copy with 4 or more players. The checklist is `qa/demo-qa.md`; the producer runs it with real players, then reports Fail rows for fixing before the freeze. Watch whether 60% tiles by round 8 are too hard (Config.Shrink).
+### Not done
 
-Slice 2 has started with the 3D models (producer approved, branches `slice2/<task-id>-<short-name>`, merge only after the D-11 playtest). Open pull requests, merge in this order:
+- **D-11, the demo playtest, has never been run.** `qa/demo-qa.md` is still entirely blank. It needs 4 or more real players on a published copy. Watch whether 60% tiles by round 8 are too hard (`Config.Shrink`). Most of the tuning questions are waiting on this, so it is the critical path.
+- **H-02, the two-server session handoff** (rows 7 to 9 of `qa/sliceH-qa.md`). Studio runs one server, so the locking added in #52 is written but not verified.
+- **No device test.** Nothing has run on a real phone. Triangle budgets pass, but frame rate and join time on a low-end phone are unknown. The biggest open risk.
+- **More than 2 players** has never been tested anywhere (#16).
+- **Slice 3** (shove, moving tiles): not started. `ShoveService` and `ShoveInput` are in the spec's module table but do not exist. Reveal-then-hide (D-05) and shrinking (D-10) shipped early as demo tasks.
+- **Slice 4** (spectator pranks): not started. `SpectatorService` and the prank picker do not exist; D-14 shipped watch-only spectating.
+- **Slice 5 remainder**: lobby polish.
+- **Slice 6** (art pass, playtest, tuning): waiting on the playtest.
+- The game page draft needs the Creator Dashboard or an Open Cloud key to apply. Its screenshots are 1339 x 753, not the 1920 x 1080 Roblox suggests.
+- Small model issues: players walk through the palms, lamps, pillars and the arch, and feet sink about half a stud into the lobby floor.
 
-- #41 3D-00 `models/` mapped into Workspace, builder rules checker (`tests/ModelRules.luau`)
-- #42 3D-01 Blender prep for the Meshy AI lobby models (`tools/blender/prep_models.py`); independent of the others
-- #43 3D-02 `models/Lobby.rbxm`, lobbyOrigin moved to y 45
-- #44 3D-03 Skybox (`Config.Assets.Images.sky`, added by LookController)
-- #45 3D-04 Spectator balcony, arena island, cloud sea; spectatorOrigin moved to z -70
-- 3D-05 these docs and the slice 2 QA record (`qa/slice2-3d-qa.md`)
+### Decisions and open questions
 
-`slice2/integration` merges all of them, so the whole build can be synced and played before merging. The Shop Kiosk model was left out (it would show a shop the game does not have). Open producer questions: the Meshy licence plan, whether blue palm leaves (green was recoloured) are wanted.
+Design reference: the concept board (not final art). Color and shape pairs follow `art/palette.json`, not the concept board (producer decision). Green was recoloured everywhere, which is why the palm leaves and bushes are blue.
 
-Design reference: the concept board (not final art). Color and shape pairs follow art/palette.json, not the concept board (producer decision). No new features after midday on day 3. The README now describes the demo build.
+Open producer questions: the Meshy licence plan; whether blue palm leaves are wanted; and, in #52, whether Wally pinned at 0.3.2 is acceptable given that its last stable release was June 2023.
 
-Open issues: #15 (cause found, waiting to be closed), #16 (a playtest need, not a bug), #17 is closed (fixed in D-06).
+Open issues: #15 (cause found in D-03, traced to the QA actor, waiting to be closed), #16 (a playtest need, not a bug). #17 is closed (fixed in D-06).
+
+The Color Panic [BETA] place was set to public by the producer on 2026-10-11. Build QA copies from `main`.
 
 Assets: all 33 demo assets are uploaded under the game owner's account. Their IDs are in "Color Panic Asset IDs.xlsx", kept outside git. Code reads them from `Config.Assets`, and each task adds the ones it uses. Use Image IDs, not Decal IDs.
 
