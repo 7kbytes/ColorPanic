@@ -269,7 +269,9 @@ local function buildGui(): Gui
 	return { panel = panel, play = play, leave = leave }
 end
 
--- Circles the camera around the arena while the menu is up.
+-- Circles the camera around the lobby island while the menu is up. The lobby is always
+-- built, while the arena only has tiles during a round, so the arena centre is empty sky
+-- between matches.
 local function startOrbit()
 	if orbitConnection then
 		return
@@ -277,8 +279,8 @@ local function startOrbit()
 	local camera = workspace.CurrentCamera
 	camera.CameraType = Enum.CameraType.Scriptable
 	orbitStartedAt = os.clock()
-	local origin = Config.Arena.origin
-	local center = Vector3.new(origin[1], origin[2], origin[3])
+	local origin = Config.Placement.lobbyOrigin
+	local center = Vector3.new(origin[1], origin[2] + Config.Menu.orbitLookHeight, origin[3])
 	orbitConnection = RunService.RenderStepped:Connect(function()
 		local menu = Config.Menu
 		local p = MenuModel.orbitPosition(

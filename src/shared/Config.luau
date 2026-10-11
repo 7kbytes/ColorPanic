@@ -342,14 +342,16 @@ local Config: Types.ConfigType = {
 			stopwatch = 112716861247418, -- A-06, timer bar
 			tileGloss = 106294149443991, -- A-11, faint gloss on tile sides
 			confetti = 96276252812980, -- A-10, Victory confetti
-			-- Skybox faces (S-03, Meshy AI), uploaded as Image assets. 0 keeps Roblox's default sky.
+			-- Skybox faces (S-03). Rebuilt seamless from the Meshy sky by
+			-- tools/blender/prep_skybox.py: the four sides are one image, mirrored on left and
+			-- right, so every vertical join matches. 0 keeps Roblox's default sky.
 			sky = {
-				back = 98513091936049,
-				down = 91105787968051,
-				front = 98235745704650,
-				left = 125115257199939,
-				right = 71698127783259,
-				up = 132902049326289,
+				back = 92600114679518,
+				down = 116911200471107,
+				front = 137745245061893,
+				left = 90469773318979,
+				right = 105984525318116,
+				up = 121629052804340,
 			},
 		},
 	},
@@ -360,15 +362,17 @@ local Config: Types.ConfigType = {
 		respawnSeconds = 5, -- delay before a queued player who died gets a new character
 	},
 
-	-- Menu overlay (D-16). Sizes are fractions of the screen; the camera orbits the arena.
+	-- Menu overlay (D-16). Sizes are fractions of the screen; the camera orbits the lobby.
 	Menu = {
-		orbitRadius = 75, -- studs from the arena centre
-		orbitHeight = 40, -- studs above the arena
+		-- The menu camera circles the lobby island (the arena is empty sky between matches).
+		orbitRadius = 80, -- studs from the lobby centre
+		orbitHeight = 26, -- studs above the lobby floor
+		orbitLookHeight = 4, -- studs above the lobby floor that the camera aims at
 		orbitSecondsPerTurn = 60,
 		-- Title screen (D-09), laid out like the concept board: logo top left, Play and two
 		-- "Coming soon" tiles under it, and a how-to-play card bottom right. The live arena
 		-- shows through a light backdrop.
-		backdropTransparency = 0.7,
+		backdropTransparency = 0.85,
 		backdropRgb = { 20, 20, 40 },
 		logoPosition = { 0.03, 0.03 }, -- top left corner
 		logoSize = { 0.36, 0.32 },

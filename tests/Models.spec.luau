@@ -219,6 +219,14 @@ describe("models/ folder", function()
 		expect(workspace["$ignoreUnknownInstances"]).toBe(true)
 	end)
 
+	-- With streaming on, the client only receives parts near its character. The menu has no
+	-- character, so the islands never arrive and the title screen shows empty sky. The whole
+	-- map is one small island cluster, so streaming costs pop-in and buys nothing.
+	it("keeps content streaming off", function()
+		local project = serde.decode("json", fs.readFile(PROJECT_PATH))
+		expect(project.tree.Workspace["$properties"].StreamingEnabled).toBe(false)
+	end)
+
 	it("has a readable manifest", function()
 		local manifest = readManifest()
 		for modelName, entry in manifest do

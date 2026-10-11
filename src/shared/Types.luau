@@ -264,6 +264,7 @@ export type ConfigType = {
 	Menu: {
 		orbitRadius: number,
 		orbitHeight: number,
+		orbitLookHeight: number,
 		orbitSecondsPerTurn: number,
 		backdropTransparency: number,
 		backdropRgb: { number },
