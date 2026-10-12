@@ -2,6 +2,10 @@
 -- The win celebration (A-09): confetti over the winner and a short camera punch when the
 -- results panel says the local player won. Runs on the winner's own client only, and clears
 -- itself up afterwards, so nothing is left behind for the next match.
+--
+-- LookController already drops confetti down everyone's screen at Victory (D-07). This is
+-- world space and over the winner's character, so it says who won rather than that someone
+-- did; it uses the same confetti art and a lower rate so the two do not fight.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -52,6 +56,11 @@ local function burstConfetti()
 	attachment.Parent = root
 
 	local emitter = Instance.new("ParticleEmitter")
+	-- The same art the screen confetti uses (Config.Look.confetti), so the two read as one
+	-- effect. Without an ID it keeps the default particle texture.
+	if Config.Assets.Images.confetti ~= 0 then
+		emitter.Texture = "rbxassetid://" .. tostring(Config.Assets.Images.confetti)
+	end
 	emitter.Color = palette
 	emitter.Rate = WIN.confettiRate
 	emitter.Lifetime = NumberRange.new(WIN.confettiLifetime[1], WIN.confettiLifetime[2])

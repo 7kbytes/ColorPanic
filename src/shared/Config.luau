@@ -230,7 +230,9 @@ local Config: Types.ConfigType = {
 
 		-- The winner's celebration: confetti over their character and a short camera punch.
 		Win = {
-			confettiRate = 90, -- particles a second while it emits
+			-- Lower than it would be on its own: the screen confetti in LookController already
+			-- fires for everyone at Victory, and this only has to mark who won.
+			confettiRate = 45, -- particles a second while it emits
 			confettiSeconds = 1.6, -- how long it emits, then it clears itself
 			confettiSpeed = { 18, 32 }, -- { min, max } studs a second
 			confettiLifetime = { 1.4, 2.4 }, -- { min, max } seconds
