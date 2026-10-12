@@ -128,6 +128,20 @@ local Config: Types.ConfigType = {
 		-- How long to wait for a new character to enter the workspace with its root part
 		-- before giving up on moving it. A missed move leaves it at the lobby SpawnLocation.
 		characterReadyTimeout = 5, -- seconds
+		-- How long a placed character is held in the air before physics takes it.
+		--
+		-- A player falling straight through the arena was the first bug a live test found.
+		-- The arena tiles are built on the server moments before the players are put on
+		-- them, and a client simulates its own character: if the tiles have not reached
+		-- that client yet, it sees a character over nothing and drops it. Placing them
+		-- spawnHeight above the tile makes that worse, because they are already falling
+		-- before the floor arrives.
+		--
+		-- So the root is anchored for this long after every placement, which is a hold a
+		-- client cannot override, and released once the ground has had time to replicate.
+		-- Long enough for a slow connection, short enough to read as a brief hover before
+		-- the round rather than a freeze.
+		settleSeconds = 0.75,
 		lobbySpawnSize = { 6, 1, 6 }, -- studs, the lobby SpawnLocation fallback
 	},
 

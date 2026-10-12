@@ -121,10 +121,30 @@ local function moveCharacter(player: Player, surface: Vector3)
 	end
 	character:PivotTo(CFrame.new(surface + Vector3.new(0, Config.Placement.spawnHeight, 0)))
 	-- A player eliminated mid-fall keeps their speed otherwise and drops through the platform.
-	if root:IsA("BasePart") then
-		root.AssemblyLinearVelocity = Vector3.zero
-		root.AssemblyAngularVelocity = Vector3.zero
+	if not root:IsA("BasePart") then
+		return
 	end
+	root.AssemblyLinearVelocity = Vector3.zero
+	root.AssemblyAngularVelocity = Vector3.zero
+
+	-- Hold them in the air while the ground beneath reaches their client. The arena tiles
+	-- are built on the server moments before players are put on them, and each client
+	-- simulates its own character, so without this a client that has not received the
+	-- tiles yet drops its player straight through the arena. Anchoring is what makes this
+	-- work: it is the one hold the client cannot simulate its way out of.
+	local settle = Config.Placement.settleSeconds
+	if settle <= 0 then
+		return
+	end
+	root.Anchored = true
+	task.delay(settle, function()
+		-- Unanchor whatever happened in between. Releasing a root that has since been
+		-- replaced is harmless, but leaving one anchored would freeze that player for the
+		-- rest of the round, so this never checks whether it is still the live character.
+		if root.Parent ~= nil then
+			root.Anchored = false
+		end
+	end)
 end
 
 -- Moves a player to the next spawn in the area, cycling through the spawns.

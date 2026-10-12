@@ -2,6 +2,7 @@ local Harness = require("./harness")
 local describe, it, expect = Harness.describe, Harness.it, Harness.expect
 
 local PlacementLayout = Harness.requireModule("ServerScriptService.Server.PlacementLayout")
+local Config = Harness.requireModule("ReplicatedStorage.Shared.Config")
 
 describe("PlacementLayout.pickTileIndices", function()
 	it("returns distinct in-range indices when there are enough tiles, 200 seeds", function()
@@ -65,5 +66,23 @@ describe("PlacementLayout.gridOffsets", function()
 		expect(offsets[4][1]).toBeCloseTo(9)
 		expect(offsets[1][2]).toBeCloseTo(-6)
 		expect(offsets[12][2]).toBeCloseTo(6)
+	end)
+end)
+
+describe("Config.Placement settling", function()
+	it("holds a placed character long enough for the ground to replicate", function()
+		-- The hold is what stops a player dropping through arena tiles their client has
+		-- not received yet, which is how the first live test ended. Zero would turn it off.
+		expect(Config.Placement.settleSeconds > 0).toBe(true)
+	end)
+
+	it("lets go again quickly enough to read as a hover, not a freeze", function()
+		expect(Config.Placement.settleSeconds < 2).toBe(true)
+	end)
+
+	it("releases well before the round intro is over", function()
+		-- Players are placed as the round intro starts, so the hold has to be over by the
+		-- time they are expected to move.
+		expect(Config.Placement.settleSeconds < Config.StateSeconds.RoundIntro).toBe(true)
 	end)
 end)
