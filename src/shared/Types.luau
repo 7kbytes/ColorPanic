@@ -146,6 +146,16 @@ export type ConfigType = {
 		decimalBelowSeconds: number,
 		maxWinnerNames: number,
 	},
+	WinsTag: {
+		enabled: boolean,
+		studsAboveHead: number,
+		sizePixels: { number },
+		maxDistanceStuds: number,
+		textSize: number,
+		showZero: boolean,
+		oneFormat: string,
+		manyFormat: string,
+	},
 	Art: {
 		enabled: boolean,
 		confettiSheet: { columns: number, rows: number, pixels: number },

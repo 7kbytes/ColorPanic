@@ -201,6 +201,22 @@ local Config: Types.ConfigType = {
 		replayRgb = { 255, 138, 31 }, -- title color for "Everyone fell!"
 	},
 
+	-- The wins nameplate over each player's head. The number is leaderstats.Wins, which the
+	-- server owns and replicates, so every client draws the same figure and none of them
+	-- decides it. A player with no wins yet shows nothing: a row of "0 wins" over a full
+	-- lobby is noise, and it would tell a new player they are bottom of the pile.
+	WinsTag = {
+		enabled = true,
+		studsAboveHead = 2.6, -- clear of the Roblox name and the hat the player is wearing
+		sizePixels = { 160, 40 }, -- the billboard's own size, not scaled to the screen
+		maxDistanceStuds = 120, -- past this it is not drawn, which keeps the arena readable
+		textSize = 28,
+		showZero = false,
+		-- "%d" is the win count. Singular and plural, because "1 wins" reads as a bug.
+		oneFormat = "%d win",
+		manyFormat = "%d wins",
+	},
+
 	-- The art pass (A-10). Panels and buttons stayed flat Frames with a UICorner: the
 	-- painted panel art was 9-sliced, and a 9-slice is described by a rectangle in the
 	-- image's own pixels, which Roblox changes without saying so by resizing any upload to

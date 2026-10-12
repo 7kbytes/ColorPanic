@@ -99,4 +99,21 @@ function Util.getMinPlayers(
 	return match.minPlayers
 end
 
+-- The text on a player's wins nameplate, or nil when nothing should be drawn. Returning nil
+-- rather than an empty string keeps the caller from having to know that a blank billboard is
+-- still a billboard: no text means destroy the tag.
+function Util.winsLabel(
+	wins: number,
+	tag: { showZero: boolean, oneFormat: string, manyFormat: string }
+): string?
+	-- A negative count would be a bug somewhere upstream, and is not worth announcing over
+	-- someone's head, so it is treated as none.
+	local count = if wins > 0 then math.floor(wins) else 0
+	if count == 0 and not tag.showZero then
+		return nil
+	end
+	local format = if count == 1 then tag.oneFormat else tag.manyFormat
+	return string.format(format, count)
+end
+
 return Util
