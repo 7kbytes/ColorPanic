@@ -201,6 +201,42 @@ local Config: Types.ConfigType = {
 		replayRgb = { 255, 138, 31 }, -- title color for "Everyone fell!"
 	},
 
+	-- The art pass (A-10). The panel and the three buttons are 9-sliced, so one image serves
+	-- every size: the rects below are the part of each picture that may stretch, in its own
+	-- pixels, as { left, top, right, bottom }. A button's rect keeps the round caps whole
+	-- across the width and lets the flat middle do the stretching. Every slot falls back to
+	-- the flat coloured panel or button if its ID is 0 or the art fails to load, so a
+	-- moderated or missing image can never leave a blank screen.
+	Art = {
+		enabled = true,
+		-- panel.png is 1264 x 1264 with a soft shadow outside its rim.
+		panelSlice = { 180, 180, 1084, 1084 },
+		-- The panel art is near white, so it takes the panel's own colour as a tint. Lift
+		-- this above 1 if the tinted art reads darker than the flat panel it replaces.
+		panelTintScale = 1,
+		buttonSlice = {
+			confirm = { 296, 0, 1340, 571 }, -- button-green.png, 1636 x 571
+			neutral = { 282, 0, 1312, 544 }, -- button-blue.png, 1594 x 544
+			danger = { 272, 0, 1326, 523 }, -- button-red.png, 1598 x 523
+		},
+		-- confetti.png is a 2 x 2 sheet, so each particle takes one quarter at random.
+		confettiSheet = { columns = 2, rows = 2 },
+		-- The coin badge in the HUD, beside the players badge.
+		coinBadgeSize = { 0.11, 0.11 },
+		-- Seconds the coin count takes to roll up to a new total.
+		coinCountSeconds = 0.4,
+		-- Puffs when a tile drops away and when a player lands on one.
+		Puff = {
+			dropCount = 14,
+			landCount = 6,
+			seconds = 0.35, -- how long each burst emits
+			lifetime = { 0.4, 0.9 },
+			speed = { 6, 14 },
+			size = 4, -- studs
+			transparency = 0.25,
+		},
+	},
+
 	-- The feel pass (A-09): panel and button motion, the glow on tiles matching the target,
 	-- and the win celebration. Set enabled = false to turn all three off at once, which is
 	-- how this was compared against the old flat look.
@@ -399,6 +435,16 @@ local Config: Types.ConfigType = {
 				square = 81677246211262,
 				diamond = 86763642426459,
 			},
+			-- A-10 UI art. Sizes, aspect ratios and what each one is for are in
+			-- art/ui/README.md, next to the source PNGs.
+			panel = 139563814522811, -- 9-slice behind every panel, tinted per panel
+			buttonConfirm = 93487180431341,
+			buttonNeutral = 127774996997034,
+			buttonDanger = 116158902545034,
+			dustPuff = 83737612681030, -- tile drops and landings
+			coin = 115834073753412, -- the coin badge in the HUD
+			bannerRibbon = 138240925155465,
+			dailyCalendar = 112125971066533,
 			leave = 131161271982260, -- A-09, red "Back" button art used for Leave
 			play = 76866923563733, -- A-09, green Play button art
 			-- Menu tile art (A-06). Same pill shape as Play and Leave.
@@ -416,7 +462,7 @@ local Config: Types.ConfigType = {
 			player = 139725380431484, -- A-05, players left
 			stopwatch = 112716861247418, -- A-06, timer bar
 			tileGloss = 106294149443991, -- A-11, faint gloss on tile sides
-			confetti = 96276252812980, -- A-10, Victory confetti
+			confetti = 101025737887579, -- A-10, four confetti strips in a 2 x 2 sheet
 			-- Skybox faces (S-03). Rebuilt seamless from the Meshy sky by
 			-- tools/blender/prep_skybox.py: the four sides are one image, mirrored on left and
 			-- right, so every vertical join matches. 0 keeps Roblox's default sky.
