@@ -89,22 +89,30 @@ function DailyRewardsService.start()
 		nextRequestAllowed[player] = nil
 	end)
 
-	-- A player who joins gets their state once their profile is in.
-	for _, player in Players:GetPlayers() do
-		task.spawn(sendState, player)
-	end
-	Players.PlayerAdded:Connect(function(player: Player)
+	-- A player gets their state once their profile is in. The profile load yields, so this
+	-- waits for it rather than racing it.
+	--
+	-- Both paths wait. The first version sent to already-present players immediately and
+	-- only waited for later joiners, which meant anyone in the server when it started got
+	-- nothing at all: their profile had not loaded yet, sendState returned early, and
+	-- nothing ever sent it again. In Studio that is every test, and on a real server it is
+	-- the first players through the door. The panel just sat on its defaults.
+	local function sendWhenLoaded(player: Player)
 		task.spawn(function()
-			-- The profile load yields. Wait for it rather than racing it.
-			for _ = 1, 60 do
+			for _ = 1, Config.Daily.profileWaitTries do
 				if DataService.getProfile(player) then
 					break
 				end
-				task.wait(0.5)
+				task.wait(Config.Daily.profileWaitSeconds)
 			end
 			sendState(player)
 		end)
-	end)
+	end
+
+	for _, player in Players:GetPlayers() do
+		sendWhenLoaded(player)
+	end
+	Players.PlayerAdded:Connect(sendWhenLoaded)
 end
 
 return DailyRewardsService

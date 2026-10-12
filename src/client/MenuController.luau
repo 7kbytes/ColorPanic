@@ -137,7 +137,7 @@ local function makeSettingsPanel(parent: Instance): (Frame, (Types.PlayerProfile
 	local menu = Config.Menu
 	local settings = Config.Settings
 	local panel = UiStyle.makePanel(
-		"Settings",
+		"SettingsPanel",
 		menu.settingsPanelSize,
 		Vector2.new(0.5, 0.5),
 		UDim2.fromScale(0.5, 0.5)
@@ -195,12 +195,12 @@ local function makeSettingsPanel(parent: Instance): (Frame, (Types.PlayerProfile
 		return refresh
 	end
 
-	local refreshMusic = makeRow("Music", 0.26, function()
+	local refreshMusic = makeRow("Music", menu.settingsRowY[1], function()
 		return music
 	end, function(v)
 		music = v
 	end)
-	local refreshSfx = makeRow("Effects", 0.46, function()
+	local refreshSfx = makeRow("Effects", menu.settingsRowY[2], function()
 		return sfx
 	end, function(v)
 		sfx = v
@@ -237,7 +237,7 @@ local function makeDailyPanel(parent: Instance): (Frame, (Types.DailyPayload) ->
 	local menu = Config.Menu
 	local daily = Config.Daily
 	local panel = UiStyle.makePanel(
-		"DailyRewards",
+		"DailyPanel",
 		menu.leaderboardPanelSize,
 		Vector2.new(0.5, 0.5),
 		UDim2.fromScale(0.5, 0.5)
@@ -349,7 +349,7 @@ local function makeLeaderboardPanel(parent: Instance): (Frame, (Types.Leaderboar
 	local menu = Config.Menu
 	local board = Config.Leaderboard
 	local panel = UiStyle.makePanel(
-		"Leaderboard",
+		"LeaderboardPanel",
 		menu.leaderboardPanelSize,
 		Vector2.new(0.5, 0.5),
 		UDim2.fromScale(0.5, 0.5)
@@ -418,7 +418,7 @@ local function makeLeaderboardPanel(parent: Instance): (Frame, (Types.Leaderboar
 end
 
 -- How to play (D-09): the tagline, three steps, and every color with its shape, from Config.
-local function makeHowToCard(parent: Instance)
+local function makeHowToCard(parent: Instance): Frame
 	local menu = Config.Menu
 	local card = UiStyle.makePanel(
 		"HowToPlay",
@@ -468,6 +468,7 @@ local function makeHowToCard(parent: Instance)
 		label.Text = pair.label
 	end
 	card.Parent = parent
+	return card
 end
 
 type Gui = { panel: Frame, play: ImageButton, leave: ImageButton }
@@ -552,14 +553,37 @@ local function buildGui(): Gui
 		tile.Parent = panel
 	end
 
+	-- Built before the panels so they can hide it while one is open.
+	local howTo = makeHowToCard(panel)
+
 	local leaderboardPanel, updateLeaderboard = makeLeaderboardPanel(panel)
 	local dailyPanel, updateDaily = makeDailyPanel(panel)
 	local settingsPanel, updateSettings = makeSettingsPanel(panel)
 	-- Only one panel at a time, so they cannot stack on top of each other.
-	local function openOnly(target: Frame)
-		for _, other in { leaderboardPanel, dailyPanel, settingsPanel } do
-			other.Visible = other == target and not target.Visible
+	--
+	-- A panel also has to draw over the how-to card. Everything in the menu sat at ZIndex
+	-- 1, so draw order fell back to sibling order and the card, built last, covered the
+	-- panels: in Studio the Claim and Close buttons were hidden behind it. The panels are
+	-- lifted above it, and the card is hidden while one is open, since a card showing
+	-- through from underneath is just noise.
+	local panels = { leaderboardPanel, dailyPanel, settingsPanel }
+	for _, each in panels do
+		-- The whole subtree is lifted, not just the panel. Under the Sibling ZIndex rule a
+		-- child below its parent's ZIndex draws behind it, so raising the panel alone put
+		-- its own background over its title, rows and buttons and left them washed out.
+		each.ZIndex = menu.panelZIndex
+		for _, child in each:GetDescendants() do
+			if child:IsA("GuiObject") then
+				child.ZIndex = menu.panelZIndex
+			end
 		end
+	end
+	local function openOnly(target: Frame)
+		local opening = not target.Visible
+		for _, other in panels do
+			other.Visible = other == target and opening
+		end
+		howTo.Visible = not opening
 	end
 	leaderboard.Activated:Connect(function()
 		openOnly(leaderboardPanel)
@@ -577,18 +601,61 @@ local function buildGui(): Gui
 		updateSettings(payload.profile)
 	end)
 	-- The Play button's height follows its art, so the tiles are placed from its drawn size.
-	-- Each tile's height comes from its own art, so they are stacked by measuring rather
-	-- than by assuming a shared row height.
+	--
+	-- Each tile's height comes from its own art, and four of them at the full tile width do
+	-- not fit under Play: measured in Studio at 1529 by 575, the column wanted 932 pixels of
+	-- a 517 pixel panel and three tiles fell off the bottom. So the width is chosen to make
+	-- the column fit the space that is actually left, never wider than the configured size.
+	-- Two rows of two, rather than one column of four. Measured in Studio at 1529 by 575,
+	-- four stacked tiles needed more height than the panel had, and shrinking them to fit
+	-- would have taken them under the touch minimum, so they are paired instead. A row is
+	-- as tall as its squarer tile, which is the one with the smaller aspect.
+	local rows = { { dailyRewards, leaderboard }, { shop, settings } }
+	local rowAspect = {
+		math.min(menu.tileAspect.dailyRewards, menu.tileAspect.leaderboard),
+		math.min(menu.tileAspect.shop, menu.tileAspect.settings),
+	}
+	local inverseAspects = 1 / rowAspect[1] + 1 / rowAspect[2]
 	local column = { dailyRewards, leaderboard, shop, settings }
+
 	local function placeTiles()
 		local panelHeight = panel.AbsoluteSize.Y
-		if panelHeight <= 0 then
+		local panelWidth = panel.AbsoluteSize.X
+		if panelHeight <= 0 or panelWidth <= 0 then
 			return -- not laid out yet; this runs again when the panel gets a size
 		end
-		local y = menu.playY + play.AbsoluteSize.Y / panelHeight + menu.soonGap
-		for _, tile in column do
-			tile.Position = UDim2.fromScale(menu.buttonsX, y)
-			y += tile.AbsoluteSize.Y / panelHeight + menu.soonGap
+
+		local top = menu.playY + play.AbsoluteSize.Y / panelHeight + menu.soonGap
+		local available = (1 - top - menu.soonGap * (#rows + 1)) * panelHeight
+		-- A tile's height is its width over its aspect, so the two rows together are the
+		-- shared width times the sum of one over each row's aspect. Solve that for width.
+		local fitWidth = available / (panelWidth * inverseAspects)
+		-- Never below the touch minimum. The floor is set by the flattest tile, since at a
+		-- shared width that is the shortest one: sizing from the squarer tile left
+		-- Leaderboard at 46 pixels, just under the minimum, while the rest passed.
+		local flattest = math.max(
+			menu.tileAspect.dailyRewards,
+			menu.tileAspect.leaderboard,
+			menu.tileAspect.shop,
+			menu.tileAspect.settings
+		)
+		local minWidth = Config.Touch.minButtonPixels * flattest / panelWidth
+		local width = math.max(math.min(menu.soonSize[1], fitWidth), minWidth)
+
+		local y = top
+		for index, row in rows do
+			local x = menu.buttonsX
+			local tallest = 0
+			for _, tile in row do
+				tile.Size = UDim2.fromScale(width, 1)
+				tile.Position = UDim2.fromScale(x, y)
+				x += width + menu.soonGap
+				tallest = math.max(tallest, tile.AbsoluteSize.Y)
+			end
+			y += tallest / panelHeight + menu.soonGap
+			if index == #rows then
+				break
+			end
 		end
 	end
 	play:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeTiles)
@@ -596,8 +663,6 @@ local function buildGui(): Gui
 	for _, tile in column do
 		tile:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeTiles)
 	end
-
-	makeHowToCard(panel)
 
 	-- Leave sits outside the panel: it shows in the lobby, when the menu is hidden (D-13).
 	local lobby = Config.Lobby

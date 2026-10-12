@@ -287,6 +287,8 @@ export type ConfigType = {
 		claimCooldown: number,
 		title: string,
 		claimedMessage: string,
+		profileWaitTries: number,
+		profileWaitSeconds: number,
 	},
 	Leaderboard: {
 		storeKey: string,
@@ -364,7 +366,9 @@ export type ConfigType = {
 		dailyClaimRgb: { number },
 		leaderboardRowHeight: number,
 		settingsPanelSize: { number },
+		settingsRowY: { number },
 		settingsStepRgb: { number },
+		panelZIndex: number,
 		howToSize: { number },
 		howToCorner: { number },
 		buttonRgb: { number },
