@@ -148,10 +148,7 @@ export type ConfigType = {
 	},
 	Art: {
 		enabled: boolean,
-		panelSlice: { number },
-		panelTintScale: number,
-		buttonSlice: { [string]: { number } },
-		confettiSheet: { columns: number, rows: number },
+		confettiSheet: { columns: number, rows: number, pixels: number },
 		coinBadgeSize: { number },
 		coinCountSeconds: number,
 		Puff: {

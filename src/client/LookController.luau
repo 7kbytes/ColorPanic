@@ -92,6 +92,10 @@ local function burstConfetti(screenGui: ScreenGui)
 		return
 	end
 	local confetti = LOOK.confetti
+	-- The confetti art is a sheet of separate strips (A-10), so a piece shows one cell of it
+	-- picked at random. Drawing the whole sheet would put all four strips in every piece.
+	local sheet = Config.Art.confettiSheet
+	local cell = Vector2.new(sheet.pixels / sheet.columns, sheet.pixels / sheet.rows)
 	local random = Random.new()
 	for index = 1, confetti.pieces do
 		local colorDef = Config.Colors[(index - 1) % #Config.Colors + 1]
@@ -100,6 +104,11 @@ local function burstConfetti(screenGui: ScreenGui)
 		piece.BackgroundTransparency = 1
 		piece.Image = UiStyle.assetUrl(id)
 		piece.ImageColor3 = toColor3(Util.hexToRgb(colorDef.hex))
+		piece.ImageRectSize = cell
+		piece.ImageRectOffset = Vector2.new(
+			random:NextInteger(0, sheet.columns - 1) * cell.X,
+			random:NextInteger(0, sheet.rows - 1) * cell.Y
+		)
 		piece.AnchorPoint = Vector2.new(0.5, 0.5)
 		piece.Size = UDim2.fromOffset(confetti.sizePixels, confetti.sizePixels)
 		piece.Position = UDim2.fromScale(random:NextNumber(), random:NextNumber(-0.3, 0))

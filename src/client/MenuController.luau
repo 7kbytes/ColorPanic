@@ -245,6 +245,31 @@ local function makeDailyPanel(parent: Instance): (Frame, (Types.DailyPayload) ->
 	panel.Visible = false
 	panel.Parent = parent
 
+	-- Calendar art (A-10) in the title row's left end, so the panel says "daily" at a
+	-- glance. Drawn whole with ScaleType.Fit, not 9-sliced, so its size on Roblox does not
+	-- have to be known: it hides itself if the art is missing.
+	local calendar = Instance.new("ImageLabel")
+	calendar.Name = "Calendar"
+	calendar.BackgroundTransparency = 1
+	calendar.ScaleType = Enum.ScaleType.Fit
+	calendar.Position = UDim2.fromScale(0, 0)
+	calendar.Size = UDim2.fromScale(0.12, 0.12) -- the title's height, so the two line up
+	calendar.Visible = false
+	calendar.Parent = panel
+	local calendarId = Config.Assets.Images.dailyCalendar
+	if Config.Art.enabled and calendarId ~= 0 then
+		calendar.Visible = true
+		calendar.Image = "rbxassetid://" .. tostring(calendarId)
+		task.spawn(function()
+			ContentProvider:PreloadAsync({ calendar }, function(_, status)
+				if status ~= Enum.AssetFetchStatus.Success then
+					warn(string.format("[Menu] Calendar art %d did not load", calendarId))
+					calendar.Visible = false
+				end
+			end)
+		end)
+	end
+
 	local title = UiStyle.makeText("Title", panel, UiStyle.HEADING_FONT)
 	title.Size = UDim2.fromScale(1, 0.12)
 	title.Text = daily.title

@@ -60,6 +60,15 @@ local function burstConfetti()
 	-- effect. Without an ID it keeps the default particle texture.
 	if Config.Assets.Images.confetti ~= 0 then
 		emitter.Texture = "rbxassetid://" .. tostring(Config.Assets.Images.confetti)
+		-- The art is a 2 x 2 sheet of confetti strips (A-10). A ParticleEmitter reads a sheet
+		-- as a flipbook, so Random gives each particle one of the four strips and holds it
+		-- rather than animating through them: the confetti is four shapes, not a loop.
+		local sheet = Config.Art.confettiSheet
+		if sheet.columns == 2 and sheet.rows == 2 then
+			emitter.FlipbookLayout = Enum.ParticleFlipbookLayout.Grid2x2
+			emitter.FlipbookMode = Enum.ParticleFlipbookMode.Random
+			emitter.FlipbookStartRandom = true
+		end
 	end
 	emitter.Color = palette
 	emitter.Rate = WIN.confettiRate

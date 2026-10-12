@@ -178,6 +178,8 @@ type Widgets = {
 	roundText: TextLabel,
 	playersPanel: Frame,
 	playersText: TextLabel,
+	coinPanel: Frame,
+	coinText: TextLabel,
 	targetPanel: Frame,
 	targetIcon: Icon,
 	targetSwatch: Frame,
@@ -233,6 +235,18 @@ local function buildGui(): Widgets
 		screenGui
 	)
 	setIcon(playersIcon, { { id = Config.Assets.Images.player, tint = UNTINTED } }, "Left")
+
+	-- Coin badge (A-10), just past the players badge so the two sit in a row to the right of
+	-- the target card. Its position is derived from the card and the badge beside it, so it
+	-- stays put if either is resized.
+	local coinPanel, coinIcon, _, coinText = makeBadge(
+		"CoinBadge",
+		Config.Art.coinBadgeSize,
+		Vector2.new(0, 0),
+		UDim2.fromScale(0.5 + cardHalf + HUD.gap + HUD.playersBadgeSize[1] + HUD.gap, margin),
+		screenGui
+	)
+	setIcon(coinIcon, { { id = Config.Assets.Images.coin, tint = UNTINTED } }, "Coins")
 
 	-- Target card: the target's tile art (as drawn on the arena), then the color name. If the
 	-- tile art is missing it falls back to the white shape icon tinted with the color, then to
@@ -400,6 +414,8 @@ local function buildGui(): Widgets
 		targetSwatch = targetSwatch,
 		targetName = targetName,
 		status = status,
+		coinPanel = coinPanel,
+		coinText = coinText,
 		timerPanel = timerPanel,
 		timerScale = timerScale,
 		timerFill = timerFill,
@@ -423,6 +439,86 @@ end
 local function setText(label: TextLabel, text: string)
 	if label.Text ~= text then
 		label.Text = text
+	end
+end
+
+-- The coin badge (A-10) ----------------------------------------------------------------------
+-- Coins are the server's number: DataService keeps leaderstats.Coins and the badge only shows
+-- it. A reward lands as one jump, so the badge rolls up to the new total over
+-- Config.Art.coinCountSeconds rather than flicking, which is what makes a reward feel paid.
+
+local function watchCoins(w: Widgets)
+	local player = Players.LocalPlayer
+	-- Shown and target totals. They differ only while a roll-up is running.
+	local shown = 0
+	local target = 0
+	local rolling = false
+
+	local function roll()
+		if rolling then
+			return
+		end
+		rolling = true
+		task.spawn(function()
+			local seconds = Config.Art.coinCountSeconds
+			-- One pass per goal. A reward landing mid roll ends the current pass early and
+			-- the next one starts from wherever the count had got to, so the number keeps
+			-- climbing instead of jumping back.
+			while shown ~= target do
+				if seconds <= 0 then
+					shown = target
+					break
+				end
+				local from = shown
+				local goal = target
+				local startedAt = os.clock()
+				repeat
+					local alpha = math.clamp((os.clock() - startedAt) / seconds, 0, 1)
+					shown = math.floor(from + (goal - from) * alpha + 0.5)
+					setText(w.coinText, tostring(shown))
+					task.wait()
+				until alpha >= 1 or goal ~= target
+				if goal == target then
+					shown = goal
+				end
+			end
+			setText(w.coinText, tostring(shown))
+			rolling = false
+		end)
+	end
+
+	local function bind(stats: Instance)
+		local coins = stats:WaitForChild("Coins", 10)
+		if not coins or not coins:IsA("IntValue") then
+			return
+		end
+		-- The first value is what the player already had, so it is shown as it is: rolling
+		-- up from zero on every join would claim they had just earned it.
+		shown = coins.Value
+		target = coins.Value
+		setText(w.coinText, tostring(shown))
+		-- Only now, with a real total in hand. The HUD as a whole is still switched off
+		-- while the menu is up, by hudGui.Enabled.
+		w.coinPanel.Visible = true
+		coins:GetPropertyChangedSignal("Value"):Connect(function()
+			target = coins.Value
+			roll()
+		end)
+	end
+
+	local stats = player:FindFirstChild("leaderstats")
+	if stats then
+		bind(stats)
+	else
+		-- Without ProfileStore installed the server never makes leaderstats, so the badge
+		-- keeps its zero rather than waiting forever.
+		local connection: RBXScriptConnection
+		connection = player.ChildAdded:Connect(function(child)
+			if child.Name == "leaderstats" then
+				connection:Disconnect()
+				bind(child)
+			end
+		end)
 	end
 end
 
@@ -663,6 +759,8 @@ function HUDController.start()
 		HudModel.applyMatchResult(model, payload)
 		render()
 	end)
+
+	watchCoins(widgets)
 
 	-- The timer and the reveal change between remotes; setText skips unchanged labels.
 	RunService.Heartbeat:Connect(render)

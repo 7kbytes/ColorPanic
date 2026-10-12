@@ -201,26 +201,21 @@ local Config: Types.ConfigType = {
 		replayRgb = { 255, 138, 31 }, -- title color for "Everyone fell!"
 	},
 
-	-- The art pass (A-10). The panel and the three buttons are 9-sliced, so one image serves
-	-- every size: the rects below are the part of each picture that may stretch, in its own
-	-- pixels, as { left, top, right, bottom }. A button's rect keeps the round caps whole
-	-- across the width and lets the flat middle do the stretching. Every slot falls back to
-	-- the flat coloured panel or button if its ID is 0 or the art fails to load, so a
-	-- moderated or missing image can never leave a blank screen.
+	-- The art pass (A-10). Panels and buttons stayed flat Frames with a UICorner: the
+	-- painted panel art was 9-sliced, and a 9-slice is described by a rectangle in the
+	-- image's own pixels, which Roblox changes without saying so by resizing any upload to
+	-- fit 1024 on its long edge. That cost more than the bevel was worth, so what is left
+	-- here is the art that needs no such rectangle: whole pictures drawn with ScaleType.Fit,
+	-- a particle texture, and the confetti sheet. docs/a10-art-spec.md has the spec for art
+	-- that could bring the painted panels back safely.
 	Art = {
+		-- Turns off the coin badge art, the daily calendar and the puffs together.
 		enabled = true,
-		-- panel.png is 1264 x 1264 with a soft shadow outside its rim.
-		panelSlice = { 180, 180, 1084, 1084 },
-		-- The panel art is near white, so it takes the panel's own colour as a tint. Lift
-		-- this above 1 if the tinted art reads darker than the flat panel it replaces.
-		panelTintScale = 1,
-		buttonSlice = {
-			confirm = { 296, 0, 1340, 571 }, -- button-green.png, 1636 x 571
-			neutral = { 282, 0, 1312, 544 }, -- button-blue.png, 1594 x 544
-			danger = { 272, 0, 1326, 523 }, -- button-red.png, 1598 x 523
-		},
 		-- confetti.png is a 2 x 2 sheet, so each particle takes one quarter at random.
-		confettiSheet = { columns = 2, rows = 2 },
+		-- `pixels` is the sheet's uploaded size, which is what a screen piece needs to cut
+		-- one cell out of it (ImageRectOffset and ImageRectSize are both in image pixels).
+		-- It went up 1264 square and came back 1024 square.
+		confettiSheet = { columns = 2, rows = 2, pixels = 1024 },
 		-- The coin badge in the HUD, beside the players badge.
 		coinBadgeSize = { 0.11, 0.11 },
 		-- Seconds the coin count takes to roll up to a new total.
@@ -229,7 +224,9 @@ local Config: Types.ConfigType = {
 		Puff = {
 			dropCount = 14,
 			landCount = 6,
-			seconds = 0.35, -- how long each burst emits
+			-- A puff is emitted as one burst, so this is how long its emitter lingers after
+			-- the last particle's lifetime before it is cleaned up.
+			seconds = 0.35,
 			lifetime = { 0.4, 0.9 },
 			speed = { 6, 14 },
 			size = 4, -- studs
