@@ -3,6 +3,7 @@
 -- dark rounded panels, white text with a dark outline, and the fonts from Config.Hud.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Util = require(ReplicatedStorage.Shared.Util)
@@ -110,6 +111,115 @@ local function makeText(
 	return label
 end
 
+-- Motion (A-09) ----------------------------------------------------------------------------
+-- Panels used to appear and disappear by flipping Visible, which made the results panel and
+-- the eliminated card snap in. setShown gives them a short pop instead. It is safe to call
+-- every frame, because only a change from the last call animates anything, and it falls back
+-- to plain Visible when Config.Motion.enabled is false.
+
+local MOTION = Config.Motion
+local MOTION_SCALE_NAME = "MotionScale"
+
+type ShowState = {
+	scale: UIScale,
+	tween: Tween?,
+	shown: boolean,
+}
+
+-- Weak keys, so a destroyed panel does not keep its state alive.
+local showStates: { [GuiObject]: ShowState } = setmetatable({}, { __mode = "k" }) :: any
+
+-- The UIScale this module animates, created once per object. Panels that already have their
+-- own UIScale (the banner and the timer) keep it: this one has its own name.
+local function motionScale(object: GuiObject): UIScale
+	local existing = object:FindFirstChild(MOTION_SCALE_NAME)
+	if existing and existing:IsA("UIScale") then
+		return existing
+	end
+	local scale = Instance.new("UIScale")
+	scale.Name = MOTION_SCALE_NAME
+	scale.Parent = object
+	return scale
+end
+
+local function setShown(panel: GuiObject, shown: boolean)
+	if not MOTION.enabled then
+		panel.Visible = shown
+		return
+	end
+	local state = showStates[panel]
+	if not state then
+		state = { scale = motionScale(panel), tween = nil, shown = panel.Visible }
+		showStates[panel] = state
+	end
+	if state.shown == shown then
+		return
+	end
+	state.shown = shown
+	if state.tween then
+		-- A panel shown and hidden quickly would otherwise have two tweens fighting.
+		state.tween:Cancel()
+		state.tween = nil
+	end
+	if shown then
+		panel.Visible = true
+		state.scale.Scale = MOTION.panelPopStartScale
+		local info =
+			TweenInfo.new(MOTION.panelPopSeconds, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+		local tween = TweenService:Create(state.scale, info, { Scale = 1 })
+		state.tween = tween
+		tween.Completed:Connect(function()
+			if state.shown then
+				state.scale.Scale = 1
+			end
+		end)
+		tween:Play()
+	else
+		local info =
+			TweenInfo.new(MOTION.panelHideSeconds, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		local tween = TweenService:Create(state.scale, info, { Scale = MOTION.panelHideScale })
+		state.tween = tween
+		tween.Completed:Connect(function()
+			-- Nothing showed it again while the tween ran, so it really is hidden now.
+			if not state.shown then
+				panel.Visible = false
+				state.scale.Scale = 1
+			end
+		end)
+		tween:Play()
+	end
+end
+
+-- Whether a panel is logically shown. While a hide tween runs the panel is still Visible for
+-- a fraction of a second, so code that toggles a panel asks this rather than reading Visible.
+local function isShown(panel: GuiObject): boolean
+	local state = showStates[panel]
+	return if state then state.shown else panel.Visible
+end
+
+-- Shrinks a button while it is held. makeButton calls this, so every button in the game has
+-- it; the scale returns to 1 on release and on the pointer leaving mid press.
+local function pressFeedback(button: GuiButton)
+	if not MOTION.enabled then
+		return
+	end
+	local scale = motionScale(button)
+	local info =
+		TweenInfo.new(MOTION.buttonPressSeconds, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local function tweenTo(target: number)
+		TweenService:Create(scale, info, { Scale = target }):Play()
+	end
+	button.MouseButton1Down:Connect(function()
+		tweenTo(MOTION.buttonPressScale)
+	end)
+	button.MouseButton1Up:Connect(function()
+		tweenTo(1)
+	end)
+	button.MouseLeave:Connect(function()
+		tweenTo(1)
+	end)
+end
+
 -- A rounded button with outlined text, in the HUD font. Clicks play the click sound.
 local function makeButton(name: string, text: string, rgb: { number }): TextButton
 	local button = Instance.new("TextButton")
@@ -138,6 +248,7 @@ local function makeButton(name: string, text: string, rgb: { number }): TextButt
 	stroke.Color = toColor3(HUD.strokeRgb)
 	stroke.Thickness = HUD.strokeThickness
 	stroke.Parent = button
+	pressFeedback(button)
 	button.Activated:Connect(function()
 		Sfx.play("click")
 	end)
@@ -156,5 +267,8 @@ UiStyle.addPadding = addPadding
 UiStyle.makePanel = makePanel
 UiStyle.addPanelStroke = addPanelStroke
 UiStyle.makeText = makeText
+UiStyle.setShown = setShown
+UiStyle.isShown = isShown
+UiStyle.pressFeedback = pressFeedback
 
 return UiStyle

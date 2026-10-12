@@ -579,9 +579,10 @@ local function buildGui(): Gui
 		end
 	end
 	local function openOnly(target: Frame)
-		local opening = not target.Visible
+		-- isShown, not Visible: a panel being closed is still Visible while its tween runs.
+		local opening = not UiStyle.isShown(target)
 		for _, other in panels do
-			other.Visible = other == target and opening
+			UiStyle.setShown(other, other == target and opening)
 		end
 		howTo.Visible = not opening
 	end

@@ -37,6 +37,7 @@ local player = Players.LocalPlayer
 type Gui = {
 	screenGui: ScreenGui,
 	dim: Frame,
+	card: Frame,
 	cardTitle: TextLabel,
 	cardSubtitle: TextLabel,
 	cardSpectate: TextButton,
@@ -83,7 +84,7 @@ local function buildGui(): Gui
 		Vector2.new(0.5, 0.5),
 		UDim2.fromScale(0.5, 0.5)
 	)
-	card.Visible = true
+	card.Visible = false -- shown with the backdrop by UiStyle.setShown
 	card.Parent = dim
 	local face = makeImage("SadFace", Config.Assets.Images.sadFace, card)
 	face.AnchorPoint = Vector2.new(0.5, 0)
@@ -164,6 +165,7 @@ local function buildGui(): Gui
 	return {
 		screenGui = screenGui,
 		dim = dim,
+		card = card,
 		cardTitle = cardTitle,
 		cardSubtitle = cardSubtitle,
 		cardSpectate = cardSpectate,
@@ -297,6 +299,9 @@ function SpectateController.start()
 		end
 
 		gui.dim.Visible = cardOpen and isSpectator
+		-- The backdrop appears at once and the card pops inside it (A-09). Scaling the
+		-- full-screen backdrop itself would show the arena around its edges.
+		UiStyle.setShown(gui.card, gui.dim.Visible)
 		gui.bar.Visible = watching
 		-- Any spectator while a match runs: mid-match joiners, and eliminated players who
 		-- closed the card.
