@@ -65,3 +65,33 @@ The game already drops screen confetti for everyone at Victory (`LookController`
 which the A-09 plan missed. WinFx now uses the same confetti art and half the particle rate,
 so the two read as one effect rather than competing. Whether both should stay is a producer
 call: see the pull request.
+
+### Two-client match run, 2026-10-12
+
+Studio Test, Server and Clients, two clients, driven through the desktop. Both clients
+pressed Play from the menu. **Six matches ran back to back** before the session was ended.
+
+| # | Check | Expected | Result |
+| --- | --- | --- | --- |
+| 16 | Two clients join | Both reach the menu, both show in the lobby board | Pass, Player1 and Player2 |
+| 17 | First Play | Lobby panel pops in, "1 player ready, waiting for 1 more" | Pass |
+| 18 | Second Play | Match starts, round banner and target card appear | Pass, "Round 1, Find the Yellow Star" |
+| 19 | Glow in a live round | Only the target colour's tiles glow, at the configured strength | Pass, 12 tiles, fill 0.70, outline 0.10, colour id matched the card |
+| 20 | Results panel at Victory | Pops in rather than snapping | Pass, scale 0.96 at the first frame, 1 by 0.15s |
+| 21 | Win celebration, winner | Confetti emitter runs, camera punches and returns | Pass, rate 45, FOV 66.6 then 64.5 then back to 70 |
+| 22 | Confetti art | Uses the uploaded confetti image, not the default particle | Pass, `rbxassetid://96276252812980` |
+| 23 | Win celebration, loser | No confetti on the eliminated player | Pass, no attachment on Player2 when Player1 won |
+| 24 | Reset audit, six matches | Clean every time | Pass, six `[Reset] Clean: 0 tiles, 172 parts, everyone in the lobby` |
+| 25 | Server log | No errors or warnings | Pass, 0 of 137 lines |
+
+### Found while testing
+
+**Both confetti effects fire together on the winner's screen.** Measured at the moment of a
+win: 36 screen confetti pieces from `LookController` and the world emitter at rate 45, at the
+same time. It is not broken, but it is two effects doing a similar job. Producer call.
+
+**The eliminated card and the results panel show at the same time.** On the losing client the
+spectator card ("Spectator mode, Watch the remaining players, Spectate") was still on the
+left while the results panel covered the middle of the screen. This is not from A-09: the
+card's visibility condition is unchanged, only the way it appears. It looks cluttered and is
+worth its own small task.
