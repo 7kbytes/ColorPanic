@@ -10,9 +10,10 @@ local ArenaLayout = require(script.Parent.ArenaLayout)
 
 type ColorId = Types.ColorId
 
-local ARENA_FOLDER_NAME = "Arena"
-local TILES_FOLDER_NAME = "Tiles"
-local COLOR_ATTRIBUTE = "ColorId"
+-- Named in Config, because the client reads the same tiles to glow them (A-09).
+local ARENA_FOLDER_NAME = Config.Arena.folderName
+local TILES_FOLDER_NAME = Config.Arena.tilesFolderName
+local COLOR_ATTRIBUTE = Config.Arena.colorAttribute
 local MARKER_NAME = "ShapeMarker"
 
 local ArenaService = {}

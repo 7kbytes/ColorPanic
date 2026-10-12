@@ -18,6 +18,8 @@ local BannerModel = require(script.Parent.BannerModel)
 local HudModel = require(script.Parent.HudModel)
 local LobbyModel = require(script.Parent.LobbyModel)
 local ResultsModel = require(script.Parent.ResultsModel)
+local TileGlow = require(script.Parent.TileGlow)
+local WinFx = require(script.Parent.WinFx)
 local UiStyle = require(script.Parent.UiStyle)
 
 type ShapeId = Types.ShapeId
@@ -38,6 +40,7 @@ local addCorner = UiStyle.addCorner
 local addPadding = UiStyle.addPadding
 local makePanel = UiStyle.makePanel
 local makeText = UiStyle.makeText
+local setShown = UiStyle.setShown
 
 -- One image an icon can show, tinted with `tint` (UNTINTED leaves the art as drawn).
 type IconChoice = { id: number, tint: Color3 }
@@ -424,7 +427,7 @@ local function setText(label: TextLabel, text: string)
 end
 
 local function drawTarget(w: Widgets, card: HudModel.TargetCard?)
-	w.targetPanel.Visible = card ~= nil
+	setShown(w.targetPanel, card ~= nil)
 	if not card then
 		return
 	end
@@ -517,7 +520,7 @@ local function drawBanner(w: Widgets, banner: BannerModel.Banner?, endsAt: numbe
 end
 
 local function drawLobby(w: Widgets, lobby: LobbyModel.View?)
-	w.lobbyPanel.Visible = lobby ~= nil
+	setShown(w.lobbyPanel, lobby ~= nil)
 	if not lobby then
 		return
 	end
@@ -539,7 +542,7 @@ local function drawLobby(w: Widgets, lobby: LobbyModel.View?)
 end
 
 local function drawResults(w: Widgets, view: ResultsModel.View?)
-	w.results.Visible = view ~= nil
+	setShown(w.results, view ~= nil)
 	if not view then
 		return
 	end
@@ -561,6 +564,23 @@ local function drawResults(w: Widgets, view: ResultsModel.View?)
 	w.resultsMore.Visible = view.more > 0
 	setText(w.resultsMore, string.format("+%d more", view.more))
 end
+
+-- True when the results panel is showing and the local player is one of the winners.
+local function selfWon(view: ResultsModel.View?): boolean
+	if not view then
+		return false
+	end
+	for _, row in view.rows do
+		if row.isSelf and row.winner then
+			return true
+		end
+	end
+	return false
+end
+
+-- Whether the celebration has already run for the results panel now on screen, so it fires
+-- once a match rather than every frame the panel is up.
+local celebrated = false
 
 -- Shows or hides the whole HUD (hidden while the menu is up).
 function HUDController.setVisible(visible: boolean)
@@ -595,6 +615,12 @@ function HUDController.start()
 			then ResultsModel.view(model.matchResult, localPlayer.UserId, Config.Results.maxRows)
 			else nil
 		drawResults(widgets, resultsView)
+		if resultsView == nil then
+			celebrated = false
+		elseif not celebrated and selfWon(resultsView) then
+			celebrated = true
+			WinFx.celebrate()
+		end
 		-- The banner, the lobby panel and the results panel each replace the status line.
 		widgets.status.Visible = banner == nil and not lobbySaysIt and resultsView == nil
 		setText(widgets.status, view.status)
@@ -607,6 +633,10 @@ function HUDController.start()
 
 		drawTarget(widgets, view.target)
 		drawTimer(widgets, view.timer, now)
+		-- The glow on matching tiles follows the card the HUD just drew, so a hidden target
+		-- never glows (A-09).
+		local targetColorId = if view.target then view.target.colorId else nil
+		TileGlow.update(targetColorId, model.targetRevealUntil, now)
 	end
 
 	Remotes.StateChanged.connect(function(payload)

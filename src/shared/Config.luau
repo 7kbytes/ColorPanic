@@ -78,6 +78,11 @@ local Config: Types.ConfigType = {
 		tileHeight = 1, -- studs
 		-- Centre of the grid. Placeholder until the builder delivers the arena (slice 2).
 		origin = { 0, 40, 0 },
+		-- Where the tiles live and how a tile carries its palette id. The server builds them
+		-- and the client reads them (A-09), so both sides name them from here.
+		folderName = "Arena",
+		tilesFolderName = "Tiles",
+		colorAttribute = "ColorId",
 	},
 
 	Match = {
@@ -194,6 +199,48 @@ local Config: Types.ConfigType = {
 		maxSubtitleSize = 36,
 		finalRgb = { 255, 214, 10 }, -- title color for "Final round!"
 		replayRgb = { 255, 138, 31 }, -- title color for "Everyone fell!"
+	},
+
+	-- The feel pass (A-09): panel and button motion, the glow on tiles matching the target,
+	-- and the win celebration. Set enabled = false to turn all three off at once, which is
+	-- how this was compared against the old flat look.
+	Motion = {
+		enabled = true,
+
+		-- Panels grow in from panelPopStartScale and shrink to panelHideScale on the way out.
+		panelPopSeconds = 0.18,
+		panelPopStartScale = 0.88,
+		panelHideSeconds = 0.12,
+		panelHideScale = 0.92,
+
+		-- Every button shrinks while it is held (UiStyle.makeButton).
+		buttonPressScale = 0.94,
+		buttonPressSeconds = 0.08,
+
+		-- The Highlight on tiles matching the target, shown only while the target is on
+		-- screen. In reveal-then-hide rounds it fades out over the last fadeSeconds of the
+		-- reveal, so it never says what the hidden target was.
+		Glow = {
+			fadeSeconds = 0.5,
+			fillTransparency = 0.7, -- 1 is invisible, so this is a faint wash
+			outlineTransparency = 0.1,
+			fillRgb = { 255, 255, 255 },
+			outlineRgb = { 255, 255, 255 },
+		},
+
+		-- The winner's celebration: confetti over their character and a short camera punch.
+		Win = {
+			confettiRate = 90, -- particles a second while it emits
+			confettiSeconds = 1.6, -- how long it emits, then it clears itself
+			confettiSpeed = { 18, 32 }, -- { min, max } studs a second
+			confettiLifetime = { 1.4, 2.4 }, -- { min, max } seconds
+			confettiSize = 0.55, -- studs
+			confettiSpread = 35, -- degrees either side of straight up
+			confettiHeight = 3, -- studs above the character's root
+			fovDelta = -7, -- degrees added to the field of view at the punch
+			fovOutSeconds = 0.12,
+			fovBackSeconds = 0.45,
+		},
 	},
 
 	-- Lobby panel (D-13): queue count and status on the left, vertically centred, clear of the
