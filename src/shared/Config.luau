@@ -392,6 +392,9 @@ local Config: Types.ConfigType = {
 		claimCooldown = 1, -- seconds between claim requests from one player
 		title = "DAILY REWARDS",
 		claimedMessage = "Come back tomorrow!",
+		-- How long to wait for a profile to load before sending the panel its state.
+		profileWaitTries = 60,
+		profileWaitSeconds = 0.5,
 	},
 
 	-- All-time top players board in the lobby (A-04). Wins only: coins are earned every
@@ -436,6 +439,12 @@ local Config: Types.ConfigType = {
 	},
 
 	-- Loading screen (A-01). Runs from ReplicatedFirst, before anything else the client does.
+	Settings = {
+		stepPercent = 10, -- how much one press of plus or minus moves a volume
+		requestCooldown = 0.25, -- seconds between settings requests from one player
+		title = "SETTINGS",
+	},
+
 	Loading = {
 		minSeconds = 10, -- keep it up at least this long so it cannot flash on and off
 		fadeSeconds = 0.6,
@@ -504,6 +513,14 @@ local Config: Types.ConfigType = {
 		dailyNextRgb = { 255, 214, 51 }, -- the day that claiming now would take
 		dailyClaimRgb = { 60, 170, 70 },
 		leaderboardRowHeight = 0.075, -- fraction of the panel, per row
+		-- The Settings panel (A-07).
+		settingsPanelSize = { 0.4, 0.56 },
+		-- Row tops, as a fraction of the panel. Far enough apart that the step buttons,
+		-- which the touch minimum can stretch to 48 pixels, cannot overlap each other.
+		settingsRowY = { 0.3, 0.54 },
+		settingsStepRgb = { 70, 90, 140 },
+		-- Panels draw above the how-to card and the tiles, which all sit at 1.
+		panelZIndex = 10,
 		howToSize = { 0.46, 0.58 },
 		howToCorner = { 0.97, 0.96 }, -- bottom right corner of the card
 		buttonRgb = { 60, 190, 90 },

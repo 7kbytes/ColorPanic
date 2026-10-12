@@ -70,7 +70,7 @@ function AudioController.start()
 				sound.Volume = 0
 				sound:Play()
 			end
-			fadeTo(sound, Config.Audio.musicVolume)
+			fadeTo(sound, Sfx.volumeFor(name))
 		end
 	end
 

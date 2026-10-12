@@ -26,6 +26,9 @@ LeaderboardService.start()
 local DailyRewardsService = require(script.Parent.DailyRewardsService)
 DailyRewardsService.start()
 
+local SettingsService = require(script.Parent.SettingsService)
+SettingsService.start()
+
 local MatchService = require(script.Parent.MatchService)
 MatchService.start()
 

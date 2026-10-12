@@ -41,7 +41,7 @@ change.
   paths exercised. P1-02 handed autosaving to ProfileStore, so that timer is gone.
 - Real DataStore throttling under load.
 
-## H-02 Session locking (P1-02), to run
+## H-02 Session locking (P1-02), Studio rows run 2026-10-12
 
 ProfileStore now holds each profile on one server at a time. Rows 1 to 6 can be run in
 Studio. **Rows 7 to 9 cannot**: they need two servers holding the same profile, and Studio
@@ -51,12 +51,12 @@ Roblox has you on different servers.
 
 | # | Check | Expected | Result |
 | --- | --- | --- | --- |
-| 1 | Join with API Services on | `[Data] Loaded <name>: N wins, N coins (live)` | |
-| 2 | Win a match, then leave and rejoin | Wins and coins come back, same as H-01 | |
-| 3 | API Services off, join | `[Data] DataStore did not answer; running in memory with saving off`, then `(cache)`. Game plays. Nobody is kicked. | |
-| 4 | API Services off, win a match, rejoin | Rewards show in the session but are gone after rejoin, and stored data is untouched | |
-| 5 | API Services back on | `(live)` again, and the data from row 2 is intact | |
-| 6 | `ServerPackages/` deleted, join | Warns that ProfileStore is not installed, runs in `(cache)`, no crash | |
+| 1 | Join with API Services on | `[Data] Loaded <name>: N wins, N coins (live)` | **Pass**, `[Data] Loaded luxygee: 0 wins, 25 coins (live)` with `[profilestore]: Roblox API services available` |
+| 2 | Win a match, then leave and rejoin | Wins and coins come back, same as H-01 | Not run. Needs a match played to a win, which needs the solo flag and a walking actor. H-01 row 3 already covers it under P1-01 |
+| 3 | API Services off, join | `[Data] DataStore did not answer; running in memory with saving off`, then `(cache)`. Game plays. Nobody is kicked. | **Pass**, both warnings after 3 retries, `(cache)`, player stayed connected, menu and panels all worked |
+| 4 | API Services off, win a match, rejoin | Rewards show in the session but are gone after rejoin, and stored data is untouched | Not run, same reason as row 2. Row 5 covers the part that matters, that stored data is untouched after an offline session |
+| 5 | API Services back on | `(live)` again, and the data from row 2 is intact | **Pass**, `(live)` with 25 coins and the streak intact. The blank cache profile was not written over the stored one, which is the H-01 guarantee holding |
+| 6 | `ServerPackages/` deleted, join | Warns that ProfileStore is not installed, runs in `(cache)`, no crash | **Pass**, `WARN [Data] ProfileStore is not installed (run `wally install`); saving is off` then `(cache)`. No errors, nobody kicked |
 | 7 | Leave and rejoin within a second or two | Loads normally. The old server hands the lock over rather than both saving. | |
 | 8 | Same account on two servers at once | The second join is kicked with "Your saved data is still in use on another server", or the first is kicked with "...was opened on another server". Either is correct; note which. | |
 | 9 | Earn coins on server A, then get taken over by server B | No progress is lost or doubled. Check the totals after both servers are empty. | |
@@ -118,3 +118,28 @@ does not spend the time this one did working it out.
 - At the time of this attempt the bridge worked and `get_studio_state` answered
   `Place is not open`, so the place has to be open in the attached instance as well. Studio
   being up and synced by Rojo is not enough on its own.
+
+### H-02 notes from the run
+
+**The session lock is real and visible.** Reading the stored profile directly showed
+ProfileStore's own `MetaData.ActiveSession` holding a place id and a JobId, next to
+`SessionLoadCount`. That is the lock this task added, written to the DataStore. It does not
+prove the handover between two servers, which is rows 7 to 9, but it is more than the code
+compiling.
+
+**Everything degrades honestly.** With the store unreachable the leaderboard panel said
+"Leaderboard unavailable" rather than "No winners yet", which is the distinction
+`LeaderboardRules.statusMessage` exists for, and the settings panel fell back to 100% rather
+than showing a stale saved value.
+
+**One thing worth knowing about cache mode.** With saving off, the daily panel offers a claim
+again, because the cached profile has no claim recorded. Claiming in that state pays coins
+that are never saved. It is not a duplication risk, since nothing is written, but a player in
+a server that lost its DataStore would see a reward appear and then vanish on rejoin.
+
+**One unexplained reading.** Midway through, the stored `musicPercent` was 60 when the last
+deliberate change had been 80. No code path writes a value nobody asked for, and a
+deterministic retest passed: 60 stepped to 80 through the UI, stored as 80, and came back as
+80 after a full restart. The likeliest cause is one of my own test clicks landing on the
+stepper while the panel was open, but that is a guess, so it is written down rather than
+dismissed. Worth a second look if anyone sees a volume change they did not make.

@@ -88,6 +88,8 @@ function DailyRules.claim(profile: PlayerProfile, today: number, track: { number
 		coins = profile.coins + coins,
 		lastClaimDay = today,
 		streak = streak,
+		musicPercent = profile.musicPercent,
+		sfxPercent = profile.sfxPercent,
 	}
 	return { claimed = true, profile = updated, coins = coins, streak = streak }
 end

@@ -23,6 +23,7 @@ local NAMES = {
 	"LeaderboardUpdated",
 	"DailyUpdated",
 	"RequestDailyClaim",
+	"RequestSettings",
 }
 
 -- A server to client channel. fireAll and fireTo run on the server only,
@@ -83,6 +84,29 @@ local function clientRequest(name: string): ClientRequest
 	}
 end
 
+-- A client to server request that carries a value. Unlike ClientRequest, the server gets
+-- something the client chose, so the callback must treat it as untrusted and validate it
+-- before acting. The type here is what the client is supposed to send, not a guarantee.
+export type ClientValueRequest<T> = {
+	fire: (payload: T) -> (),
+	connect: (callback: (player: Player, payload: any) -> ()) -> RBXScriptConnection,
+}
+
+local function clientValueRequest<T>(name: string): ClientValueRequest<T>
+	return {
+		fire = function(payload: T)
+			assert(RunService:IsClient(), "fire is client only")
+			getEvent(name):FireServer(payload)
+		end,
+		connect = function(callback: (player: Player, payload: any) -> ()): RBXScriptConnection
+			assert(RunService:IsServer(), "connect is server only")
+			return getEvent(name).OnServerEvent:Connect(function(player: Player, payload: any)
+				callback(player, payload)
+			end)
+		end,
+	}
+end
+
 local Remotes = {}
 
 -- Client requests (D-16 join queue).
@@ -90,6 +114,9 @@ Remotes.RequestPlay = clientRequest("RequestPlay")
 Remotes.RequestLeave = clientRequest("RequestLeave")
 -- Daily rewards (A-08). No payload: the server decides whether a claim is due.
 Remotes.RequestDailyClaim = clientRequest("RequestDailyClaim")
+-- Settings (A-07). The payload is what the client wants; the server clamps it.
+Remotes.RequestSettings =
+	clientValueRequest("RequestSettings") :: ClientValueRequest<Types.SettingsPayload>
 
 Remotes.StateChanged = serverToClient("StateChanged") :: ServerToClient<Types.StateChangedPayload>
 Remotes.RoundInfo = serverToClient("RoundInfo") :: ServerToClient<Types.RoundInfoPayload>

@@ -287,6 +287,8 @@ export type ConfigType = {
 		claimCooldown: number,
 		title: string,
 		claimedMessage: string,
+		profileWaitTries: number,
+		profileWaitSeconds: number,
 	},
 	Leaderboard: {
 		storeKey: string,
@@ -306,6 +308,11 @@ export type ConfigType = {
 		textRgb: { number },
 	},
 	Props: { [string]: PropRule },
+	Settings: {
+		stepPercent: number,
+		requestCooldown: number,
+		title: string,
+	},
 	Loading: {
 		minSeconds: number,
 		fadeSeconds: number,
@@ -358,6 +365,10 @@ export type ConfigType = {
 		dailyNextRgb: { number },
 		dailyClaimRgb: { number },
 		leaderboardRowHeight: number,
+		settingsPanelSize: { number },
+		settingsRowY: { number },
+		settingsStepRgb: { number },
+		panelZIndex: number,
 		howToSize: { number },
 		howToCorner: { number },
 		buttonRgb: { number },
@@ -405,6 +416,9 @@ export type PlayerProfile = {
 	-- clock, 0 meaning never claimed. `streak` is consecutive claimed days.
 	lastClaimDay: number,
 	streak: number,
+	-- Settings (A-07). Whole percentages, 0 to 100, multiplying the mix in Config.Audio.
+	musicPercent: number,
+	sfxPercent: number,
 }
 
 -- Remote payloads, server to client. endsAt is a server timestamp from
@@ -485,6 +499,13 @@ export type DailyPayload = {
 	reward: number,
 	secondsUntilNext: number,
 	track: { number },
+}
+
+-- What a client asks its settings to become (A-07). Whole percentages, 0 to 100. The
+-- server clamps whatever actually arrives, so this is the intended shape, not a promise.
+export type SettingsPayload = {
+	music: number,
+	sfx: number,
 }
 
 -- One line of the top players board (A-04). Tied players share a place.
