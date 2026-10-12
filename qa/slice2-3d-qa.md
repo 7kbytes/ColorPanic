@@ -1,6 +1,6 @@
 # Slice 2 QA record: 3D models (3D-00 to 3D-04)
 
-Studio QA run by Claude Code on 2026-10-11 in the Color Panic [BETA] place, with `rojo serve` syncing the slice 2 branches. Test, Server and Clients with 2 clients, plus solo runs with `Config.Match.studioSinglePlayerEnabled` set locally (never committed).
+Studio QA run on 2026-10-11 in the Color Panic [BETA] place, with `rojo serve` syncing the slice 2 branches. Test, Server and Clients with 2 clients, plus solo runs with `Config.Match.studioSinglePlayerEnabled` set locally (never committed).
 
 ## Automated
 

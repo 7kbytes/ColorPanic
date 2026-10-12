@@ -1,6 +1,6 @@
 # Slice H tasks: harden to playable
 
-**Status: proposed by Claude Code, not yet approved.** The ordering and the cut line are the
+**Status: proposed, not yet approved.** The ordering and the cut line are the
 producer's call. Nothing below is started except where it says so.
 
 Goal: take a build that demonstrates well and make it survive real players. Slice H adds no
@@ -11,7 +11,7 @@ spectator pranks (slice 4), lobby polish and the shop (slice 5), the art pass an
 tuning (slice 6). If a playtest says the game is not fun, that is slice 6 work, not this.
 
 Branches `sliceH/<task-id>-<short-name>`. QA records go in `qa/sliceH-qa.md`, one section per
-task. Working rules: see `CLAUDE.md`.
+task. Working rules: see `SPEC.md`, section 7.
 
 ## Why this slice exists
 

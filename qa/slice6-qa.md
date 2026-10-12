@@ -1,6 +1,6 @@
 # Slice 6 QA record
 
-Studio QA by Claude Code, through the Roblox Studio MCP.
+Studio QA, run through the Roblox Studio MCP.
 
 ## A-09 Feel pass, 2026-10-12
 

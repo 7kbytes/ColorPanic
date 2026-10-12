@@ -1,6 +1,6 @@
 # Slice H QA record: harden to playable
 
-Studio QA by Claude Code. Solo runs use `Config.Match.studioSinglePlayerEnabled` set locally and never committed.
+Studio QA. Solo runs use `Config.Match.studioSinglePlayerEnabled` set locally and never committed.
 
 ## H-01 Persistence (P1-01), 2026-10-11
 

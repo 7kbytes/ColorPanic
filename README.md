@@ -1,65 +1,186 @@
 # Color Panic
 
-A round-based Roblox party game for kids, built with Rojo. Players race to stand on the tile that matches the target color before the timer runs out. Every other tile drops, and the last one standing wins. Every color has its own shape, so the game never relies on color alone.
+**Find the color. Survive the chaos. Be the last one standing.**
 
-See `SPEC.md` for requirements and `CLAUDE.md` for working rules and current status.
+A round-based party game for 2 to 12 players, built for Roblox. A target flashes up on screen,
+*Red Heart*, *Blue Circle*, *Purple Square*, and you have a few seconds to reach a tile that
+matches it. Every other tile drops away into the clouds. Miss it and you are out.
 
-## Status: 3-day demo build
+Each round is faster than the last. From round 3 the target hides after a quick look, so you
+have to remember it. From round 4 the tiles start shrinking. The last player standing wins.
 
-Slice 1 (the core loop) and the demo tasks are merged to `main`:
+![Color Panic](art/page/thumbnail-keyart.jpg)
 
-- **Title screen:** logo, Play, a how-to-play card with the six color and shape pairs, and Settings and Shop marked "Coming soon" (not built).
-- **Join queue:** players start in the menu. Only players who press Play count toward a match, and Leave returns to the menu before a match starts.
-- **Lobby panel:** players ready, players still needed, and a countdown banner.
-- **Rounds:**
-  - an intro banner: "Round 3 / Find the Red Heart · 12 seconds"
-  - a timer with a 3-second warning
-  - tiles that show their shape
-  - reveal-then-hide targets from round 3
-  - shrinking tiles from round 4
-  - a replay if everyone falls
-  - a round cap of 8 with "Final round!"
-- **Eliminated players:** an "Eliminated!" card, then spectating (the camera follows a survivor; switch or stop at any time).
-- **Results:** winner, places and rounds survived for this match only. Nothing is saved.
-- **Look and sound:** glossy tiles, soft lighting, bloom, a prop ring, confetti, 9 sound effects and 2 music loops.
+**Play it:** [Color Panic [BETA] on Roblox](https://www.roblox.com/games/95448694004978)
 
-Out of scope for the demo: shove, spectator pranks, saved data, custom chat, monetization, and Settings and Shop beyond the "Coming soon" tiles.
+---
 
-## How to play
+## Contents
 
-1. Press **Play** on the title screen. A match starts when at least 2 players are ready.
-2. Each round shows a target, for example **Red Heart**. Run to a tile with that color and shape before the timer ends.
-3. The other tiles drop. Anyone not on a target tile is out and can spectate.
-4. Rounds get faster, the target hides after a short reveal from round 3, and tiles shrink from round 4. The last player standing wins. Anyone still standing after round 8 shares the win.
+- [What is in the build](#what-is-in-the-build)
+- [How a match plays](#how-a-match-plays)
+- [Design decisions worth calling out](#design-decisions-worth-calling-out)
+- [Tools and technology](#tools-and-technology)
+- [How the code is organised](#how-the-code-is-organised)
+- [Quality: tests, types, lint](#quality-tests-types-lint)
+- [Running it yourself](#running-it-yourself)
+- [Configuration](#configuration)
+- [3D models and art pipeline](#3d-models-and-art-pipeline)
+- [What is not built yet](#what-is-not-built-yet)
+- [Credits and licence](#credits-and-licence)
 
-## Setup
+---
 
-1. Install [Rokit](https://github.com/rojo-rbx/rokit) (the toolchain manager that pins tool versions).
-2. In the repo root, install the pinned tools:
+## What is in the build
+
+| | |
+| --- | --- |
+| **Title screen and menu** | Logo, Play, a how-to-play card showing all six colour and shape pairs, and a settings panel |
+| **Join queue** | Players start in the menu. Only players who press Play count toward a match, and Leave takes them back out before it starts |
+| **Lobby** | A floating island with spawn pads, a readiness panel and a countdown banner |
+| **Rounds** | Round banner, a timer with a 3 second warning, shaped tiles, reveal-then-hide targets from round 3, shrinking tiles from round 4, a round cap with "Final round!" |
+| **Elimination** | An "Eliminated!" card, then free spectating: the camera follows a survivor, and you can switch or stop at any time |
+| **Results** | Winner, places and rounds survived |
+| **Persistence** | Wins, coins and daily rewards saved per player, with session locking so two servers can never save over each other |
+| **Presentation** | Three hand-assembled 3D islands floating over a cloud sea, a custom skybox, glossy tiles, confetti, dust puffs, 9 sound effects and 2 music loops |
+
+## How a match plays
+
+1. Press **Play** on the title screen. A match starts once at least 2 players are queued.
+2. Each round announces a target, for example **Red Heart**. Run to a tile with that colour
+   *and* that shape before the timer runs out.
+3. Every other tile drops. Anyone not standing on a target tile is eliminated and can spectate.
+4. Rounds speed up, the target starts hiding, the tiles start shrinking. Last player standing
+   wins; anyone still alive after the final round shares it.
+
+## Design decisions worth calling out
+
+**Every colour carries its own shape.** Red is a heart, blue is a circle, purple is a square,
+and so on. The game can be played start to finish without being able to tell the colours apart,
+which makes it work for colour blind players. A test fails the build if a colour or shape name
+is hardcoded anywhere outside the config module, so the pairing cannot quietly drift.
+
+**The server decides everything.** Clients draw what they are told and send exactly two
+requests, Play and Leave, both validated server side. Match state, round generation, tile
+removal, who is out, placement and results are all decided on the server. Nothing a client
+sends can change the outcome of a round.
+
+**Fairness is enforced, not hoped for.** The round generator guarantees at least one matching
+tile per two surviving players, so a round can never be unwinnable by arithmetic.
+
+**Game rules are pure functions.** The logic that decides match state, round difficulty and
+elimination touches no Roblox instances at all, which is why it can be tested outside Studio
+(see below). The same split applies on the client: every controller draws from a pure view
+model, and the view models are what the tests cover.
+
+**No magic numbers.** Every tunable value (timers, grid size, colours, fonts, volumes, camera
+angles) lives in one config module. Services read it; they never hardcode.
+
+**Built for phones.** Triangle and part budgets are enforced per mesh and per model by a test
+that reads a manifest, because Roblox cannot report triangle counts from a model file.
+
+## Tools and technology
+
+| Tool | Version | What it does here |
+| --- | --- | --- |
+| **Luau** | | The language. `--!strict` on core modules |
+| **[Rojo](https://rojo.space/)** | 7.7.1 | Syncs the filesystem into Roblox Studio, so the project lives in Git rather than inside a `.rbxl` |
+| **[Rokit](https://github.com/rojo-rbx/rokit)** | | Toolchain manager. Pins every tool version in `rokit.toml`, so the build is reproducible |
+| **[Lune](https://github.com/lune-org/lune)** | 0.10.5 | Runs the test suite outside Roblox Studio, in seconds |
+| **[luau-lsp](https://github.com/JohnnyMorganz/luau-lsp)** | 1.70.1 | Strict type checking against real Roblox API types, outside Studio |
+| **[StyLua](https://github.com/JohnnyMorganz/StyLua)** | 2.5.2 | Formatter |
+| **[Selene](https://github.com/Kampfkarren/selene)** | 0.32.0 | Linter, with the Roblox standard library |
+| **[Wally](https://wally.run/)** | 0.3.2 | Package manager. One dependency: ProfileStore, for player data session locking |
+| **Blender** | 5.2 | Scripted mesh prep: decimation to budget, UV re-bake, recolour, FBX export |
+
+Everything is version pinned, so `rokit install` gives a new contributor the exact same
+toolchain.
+
+## How the code is organised
+
+```
+src/
+  server/          Game rules and services, server authoritative
+  client/          Controllers that draw, plus their pure view models
+  shared/          Config, Types, Remotes, pure rule modules
+  replicatedfirst/ The loading screen, which must run before anything else
+models/            Four .rbxm 3D models, mapped straight into Workspace
+tests/             33 spec files, run outside Studio with Lune
+qa/                QA records per slice, and Studio command bar snippets
+art/               Palette, UI source art, model manifests
+docs/              Design and task documents
+scripts/           Type check and test runners
+tools/blender/     The mesh and skybox preparation pipeline
+```
+
+| Folder | Becomes in Roblox |
+| --- | --- |
+| `src/server` | `ServerScriptService.Server` |
+| `src/shared` | `ReplicatedStorage.Shared` |
+| `src/client` | `StarterPlayer.StarterPlayerScripts.Client` |
+| `src/replicatedfirst` | `ReplicatedFirst` |
+| `models` | `Workspace`, one top-level model per file |
+
+Entry points are `Main.server.luau` and `Main.client.luau`.
+
+**The main pieces.** `MatchService` runs the match state machine (with the pure `MatchFlow`),
+`RoundDirector` generates rounds and enforces the fairness rule, `ArenaService` builds and
+strips the tile grid, `EliminationService` and `EliminationRules` decide who is out,
+`PlacementService` moves players between lobby, arena and spectator island, and `DataService`
+saves player data behind the pure `SessionRules`. On the client, `HUDController`,
+`MenuController`, `SpectateController`, `AudioController` and `LookController` each render from
+a matching pure model. Remotes are declared only in `shared/Remotes`.
+
+## Quality: tests, types, lint
+
+```bash
+bash scripts/test.sh        # 469 assertions across 33 spec files, no Studio needed
+bash scripts/typecheck.sh   # strict Luau types against real Roblox API definitions
+stylua --check src tests    # formatting
+selene src tests            # linting
+```
+
+All four run before any pull request is opened. The test harness reads the Rojo sourcemap, so
+modules keep their normal Roblox-style requires (`script.Parent.X`, `game:GetService(...)`) and
+nothing has to be written specially in order to be testable.
+
+What the tests cover: the match state machine, round generation and the fairness rule,
+elimination, results and placement, the join queue, every UI view model, the config contract (a
+colour or shape name outside Config fails the build), and the 3D model builder rules, which
+check anchoring, palette compliance, clearance around the arena and phone budgets against every
+`.rbxm` file in the repository.
+
+QA that cannot be automated is recorded by hand, one file per slice, in `qa/`.
+
+## Running it yourself
+
+1. Install [Rokit](https://github.com/rojo-rbx/rokit), then from the repository root:
 
    ```bash
    rokit install
    ```
 
-   Rokit asks you to trust each tool the first time. Pinned versions live in `rokit.toml` (Rojo, StyLua, Selene, luau-lsp, Lune, Wally).
-3. Install the one package the game depends on:
+   Rokit asks you to trust each tool the first time. Versions come from `rokit.toml`.
+
+2. Install the one package the game depends on:
 
    ```bash
    wally install
    ```
 
-   This creates `ServerPackages/`, which is not in git. `wally.lock` pins the exact version, so everyone gets the same one. Without this step the game still runs, but player data is held in memory and never saved, and the server log says so.
-4. Install the Rojo plugin in Roblox Studio. Its version should match the Rojo version in `rokit.toml`.
+   This creates `ServerPackages/`, which is not in Git; `wally.lock` pins the exact version.
+   Without this step the game still runs, but player data is held in memory and never saved,
+   and the server log says so.
 
-## Build and run
+3. Install the Rojo plugin in Roblox Studio, matching the Rojo version above.
 
-Build a place file:
+**Build a place file:**
 
 ```bash
 rojo build default.project.json -o ColorPanic.rbxl
 ```
 
-Live sync into Studio:
+**Live sync into Studio:**
 
 ```bash
 rojo serve
@@ -69,100 +190,86 @@ Then open a place in Studio and click Connect in the Rojo plugin (default port 3
 
 ### Testing in Studio
 
-- Use **Test, Server and Clients with 2 clients**. Do not run 8 local clients; one machine runs out of memory.
-- Players start in the menu, so press **Play** in each client window. `qa/snippets/press_play.client.luau` does the same from a client command bar.
-- A match needs 2 queued players. For a one-player match in Studio only, set `Config.Match.studioSinglePlayerEnabled = true` (it never applies to live servers).
-- Test actors must walk (`qa/snippets/actor.client.luau`). Client-side teleports do not always reach the server.
+- Use **Test, Server and Clients with 2 clients.** Do not run 8 local clients; one machine runs
+  out of memory.
+- Players start in the menu, so press **Play** in each client window.
+  `qa/snippets/press_play.client.luau` does the same from a client command bar.
+- A match needs 2 queued players. For a one-player match in Studio only, set
+  `Config.Match.studioSinglePlayerEnabled = true`. It never applies to live servers.
+- Test actors must walk (`qa/snippets/actor.client.luau`). Client-side teleports do not always
+  reach the server.
 
-### Publishing the demo
+### Publishing
 
-Build from `main` and publish the place as a private experience under the **same account that owns the uploaded images and sounds** (the asset IDs in `Config.Assets`). Roblox audio is private to its owner, so under another account or a group the sounds stay silent until you grant that experience access. The QA steps for a published copy are in `qa/demo-qa.md`.
+Build from `main` and publish under the **same account that owns the uploaded images and
+sounds** (the asset IDs in `Config.Assets`). Roblox audio is private to its owner, so under
+another account or a group the sounds stay silent until that experience is granted access.
 
 ## Configuration
 
-Every tunable value lives in `src/shared/Config.luau`. Services never hardcode numbers, colors or shapes. A test fails if a color or shape name appears anywhere outside Config.
+Every tunable value lives in `src/shared/Config.luau`.
 
 | Table | What it controls |
 | --- | --- |
-| `Colors` | The six colors, their hex values and shapes, copied from `art/palette.json` (a test keeps them in step) |
-| `Difficulty`, `Match`, `StateSeconds` | Round timers, color counts, reveal times, the round cap and state lengths |
+| `Colors` | The six colours, their hex values and shapes, mirrored from `art/palette.json` (a test keeps them in step) |
+| `Difficulty`, `Match`, `StateSeconds` | Round timers, colour counts, reveal times, the round cap, state lengths |
 | `Shrink` | Shrinking tiles: from which round, how much per round, the smallest size |
-| `Assets` | Roblox asset IDs for images and sounds. Use Image IDs, not Decal IDs. An ID of 0 skips the asset and shows a text fallback. |
-| `Hud`, `Banner`, `Lobby`, `Spectate`, `Results`, `Menu` | UI sizes, positions, colors and fonts |
-| `Look`, `Audio` | Lighting, bloom, tile gloss, props, confetti; sound and music volumes |
+| `Assets`, `Art` | Roblox asset IDs for images and sounds. Use Image IDs, not Decal IDs. An ID of 0 skips the asset and shows a text fallback |
+| `Hud`, `Banner`, `Lobby`, `Spectate`, `Results`, `Menu` | UI sizes, positions, colours and fonts |
+| `Look`, `Audio` | Lighting, bloom, tile gloss, props, confetti, sound and music volumes |
 
-**Presets:** `ACTIVE_PRESET` at the top of `Config.luau` picks a preset applied on top of the normal values. `"demo"` (the current one) shortens the intermission, caps a match at 8 rounds, sets the demo difficulty and turns on shrinking tiles. `"normal"` changes nothing. Presets list only the values that differ, and an unknown key or a wrong type is an error at startup.
+**Presets.** `ACTIVE_PRESET` at the top of `Config.luau` applies a named preset on top of the
+normal values. `"demo"` shortens the intermission, caps a match at 8 rounds and turns on
+shrinking tiles; `"normal"` changes nothing. A preset lists only what differs, and an unknown
+key or a wrong type is an error at startup rather than a silent miss.
 
-## Format, lint, type check and test
+## 3D models and art pipeline
 
-```bash
-stylua src tests
-stylua --check src tests
-selene src tests
-bash scripts/typecheck.sh
-bash scripts/test.sh
-```
+Models live in `models/` as `.rbxm` files. Rojo maps each one into `Workspace` under its file
+name, so `models/Lobby.rbxm` becomes `workspace.Lobby`. `Workspace` uses
+`$ignoreUnknownInstances`, so the baseplate and everything built at runtime are left alone.
 
-Run all of these before opening a pull request. On Windows, run the scripts from Git Bash.
+| File | What it is |
+| --- | --- |
+| `models/Lobby.rbxm` | The floating lobby island: 12 spawn pads around a crowned platform, an entrance arch, palms, lamps, pillars, rocks |
+| `models/SpectatorArea.rbxm` | A smaller island beside the arena, with 12 spawn pads |
+| `models/ArenaIsland.rbxm` | The island under the tile grid, 12 studs below the tiles, so players who fall land on it (they are still judged out) |
+| `models/CloudSea.rbxm` | A white cloud floor and 10 cloud meshes |
 
-- **Tests:** `scripts/test.sh` runs the pure-logic tests in `tests/*.spec.luau` with [Lune](https://github.com/lune-org/lune), outside Studio. `tests/harness.luau` reads the Rojo sourcemap, so modules keep their Roblox-style requires (`script.Parent.X`, `game:GetService(...)`).
-- **What can be tested:** only pure modules, with no real services or instances. Game rules (`MatchFlow`, `RoundDirector`, `EliminationRules`, `MatchResults`, `QueueRules`) and every `*Model` behind the UI are pure for this reason.
-- **Adding tests:** create `tests/<Name>.spec.luau` using `describe`, `it` and `expect` from the harness.
-- **Type check:** `scripts/typecheck.sh` uses luau-lsp with Roblox API types and a Rojo sourcemap, so `--!strict` errors and bad requires are caught outside Studio. On first run it downloads the Roblox type definitions for the pinned luau-lsp version into `.luau-lsp/` (git-ignored).
+The sky is code, not a model: `LookController` builds it from `Config.Assets.Images.sky`.
 
-## 3D models
+`tests/Models.spec.luau` checks every model file against the builder rules in
+`tests/ModelRules.luau`: every part anchored, only palette colours or neutrals, nothing visible
+or collidable intruding on the arena square, a valid `Spawns` folder on the two island models,
+and the phone budgets (400 parts per model, 20,000 triangles per mesh, 80,000 per model).
 
-Models live in `models/` as `.rbxm` or `.rbxmx` files. Rojo maps each file into `Workspace` under the file name, so `models/Lobby.rbxm` becomes `workspace.Lobby`. `Workspace` is mapped with `$ignoreUnknownInstances`, so the baseplate and everything the game builds at runtime are left alone.
+**Rebuilding a model.** Source art stays outside Git. `tools/blender/prep_models.py` takes each
+source mesh export, decimates it to its triangle budget, bakes its texture onto new UVs,
+recolours to the palette and exports an FBX in studs, with per-model targets read from
+`art/lobby_models.json`. The FBX is imported with Studio's 3D Importer, assembled with the
+command bar scripts in `tools/studio/`, saved back into `models/`, and its triangle counts added
+to `art/models_manifest.json`. Then `bash scripts/test.sh` checks the new file.
 
-`tests/Models.spec.luau` checks every model file against the builder rules from the 3D models workbook (the rules are in `tests/ModelRules.luau`):
+## What is not built yet
 
-- Every part is anchored.
-- Plain parts use only the six palette colours or neutrals, never green. Textured parts are checked when their textures are prepared.
-- Nothing visible inside the 60 x 60 tile square near tile height. Nothing collidable in it or within 12 studs of it (no standable rim), down to 10 studs under the tiles.
-- `Lobby` and `SpectatorArea` have a `Spawns` folder with 12 or more flat, anchored parts. If either model is missing, the game builds its grey placeholder instead.
-- Phone budgets: at most 400 parts per model, and triangle counts from `art/models_manifest.json` (20,000 per mesh, Roblox's limit, and 80,000 per model).
+Stated plainly, because `SPEC.md` shows the full plan and these are the parts it does not yet
+reach:
 
-Roblox cannot report a mesh's triangles from a model file, so the asset prep step records each MeshPart's count in `art/models_manifest.json` (kept outside `models/`, which Rojo maps into Workspace), keyed by model name and then MeshPart name. A MeshPart missing from the manifest fails the check.
+- **Shove** (pushing other players) and **spectator pranks**: designed in `SPEC.md`, not started.
+- **Monetisation and shop:** not built. No shop appears anywhere in the game.
+- **A playtest with 4 or more real players** has not been run. The checklist is ready and empty
+  at `qa/demo-qa.md`. Difficulty tuning past round 8 is waiting on it.
+- **A test on a real low-end phone.** Triangle and part budgets pass, but measured frame rate
+  and join time on a phone are unknown. This is the largest open risk in the project.
 
-### The models (slice 2)
+## Credits and licence
 
-| File | What it is | Notes |
-| --- | --- | --- |
-| `models/Lobby.rbxm` | The floating lobby island at `Config.Placement.lobbyOrigin` (y 45): 12 spawn pads around a crowned platform, the entrance arch, palms, lamps, pillars, rocks | Meshes do not collide; an invisible floor, railings and platform do. Includes a SpawnLocation. |
-| `models/SpectatorArea.rbxm` | A smaller island beside the arena at `spectatorOrigin` (z -70) with 12 spawn pads | Same collision approach as the lobby |
-| `models/ArenaIsland.rbxm` | The island under the tile grid, 12 studs below the tiles | Collides, so players who fall land on it; they are still judged out |
-| `models/CloudSea.rbxm` | A white cloud floor over the baseplate and 10 cloud meshes | |
+- Code and game design: 7Kbytes.
+- Palette and shape pairings: `art/palette.json`.
+- 3D source meshes were generated with Meshy AI and then prepared for Roblox through the
+  Blender pipeline in `tools/blender/` (decimation, UV re-bake, palette recolour). UI art was
+  likewise generated, then trimmed, converted and uploaded; `art/ui/README.md` records each
+  picture's source and its uploaded size.
+- Licensed under Apache-2.0 (see `wally.toml`).
 
-The sky is code, not a model: `LookController` adds a Sky from `Config.Assets.Images.sky`.
-
-### Rebuilding a model
-
-1. **Prepare the meshes** (source art stays outside git): `tools/blender/prep_models.py` decimates each Meshy AI export to its triangle budget, bakes its texture onto new UVs, recolours green and exports an FBX in studs. Targets are in `art/lobby_models.json`. Run it with Blender 5.2 in background mode (usage at the top of the script).
-2. **Import** the FBX files with Studio's 3D Importer (Creator: the game owner, so the assets belong to the account that publishes the game).
-3. **Assemble** in a scratch place with the command bar scripts in `tools/studio/` (`assemble_lobby.luau`, `assemble_environment.luau`).
-4. **Save** each model with right click, Save to File, into `models/<Name>.rbxm`, and add its MeshParts' triangle counts to `art/models_manifest.json`.
-5. Run `bash scripts/test.sh`; the builder rules check the new file.
-
-If `rojo serve` is running while a model file is re-saved, Rojo can leave a duplicate copy in Workspace (`$ignoreUnknownInstances` keeps it). Delete the copies and reconnect Rojo.
-
-## Layout
-
-| Folder | Becomes | Contents |
-| --- | --- | --- |
-| `src/server` | `ServerScriptService.Server` | Server services and pure game rules |
-| `src/shared` | `ReplicatedStorage.Shared` | Config, Types, Remotes, Util |
-| `src/client` | `StarterPlayer.StarterPlayerScripts.Client` | Client controllers and their pure view models |
-| `src/replicatedfirst` | `ReplicatedFirst` | The loading screen, which has to run before anything else the client does |
-| `models` | `Workspace` | 3D models, one file per top-level model, named after the file |
-| `tests` | (not in the game) | Lune tests and the test harness |
-| `qa` | (not in the game) | QA records, the demo QA checklist and Studio command bar snippets |
-| `art` | (not in the game) | The artist's palette (`palette.json`) |
-| `scripts` | (not in the game) | Type check and test runners |
-
-Entry points are `Main.server.luau` and `Main.client.luau`. Module scripts use the `.luau` extension.
-
-**How the code fits together:**
-
-- **Server authority:** the server decides everything: match state (`MatchService`, with the pure `MatchFlow`), rounds (`RoundDirector`), tiles (`ArenaService`), who is out (`EliminationService` and `EliminationRules`), placement and results.
-- **Remotes:** declared only in `shared/Remotes`. Clients send just two requests, Play and Leave, which the server validates.
-- **Clients only draw:** they render what the server sends. Each controller (HUD, menu, spectate, audio, look) draws from a pure model (`HudModel`, `BannerModel`, `LobbyModel`, `ResultsModel`, `SpectateModel`, `AudioModel`, `MenuModel`), and the models are what the tests cover.
+Requirements, architecture and the full slice plan are in [`SPEC.md`](SPEC.md).

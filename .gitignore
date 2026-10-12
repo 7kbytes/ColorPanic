@@ -23,3 +23,13 @@ __pycache__/
 /Packages/
 /ServerPackages/
 /DevPackages/
+
+# Local-only: agent instructions and MCP server config
+CLAUDE.md
+.mcp.json
+
+# Local-only working files kept outside the repo
+*.xlsx
+*.zip
+/Color Panic*/
+/scripts/publish.sh

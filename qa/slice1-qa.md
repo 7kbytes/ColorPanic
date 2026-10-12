@@ -3,7 +3,7 @@
 - **Build tested:** `main` at `41de1c9` (S1-01 to S1-10).
 - **Date:** 2026-10-09.
 - **Where:** Roblox Studio, Test with Clients and Servers, on one Windows machine with 12 GB RAM.
-- **Method:** the scripts in `qa/snippets/`, run from the Studio command bar through the Studio MCP:
+- **Method:** the scripts in `qa/snippets/`, run from the Studio command bar:
   - a HUD recorder on each client
   - a placement recorder on the server
   - an actor on each client that stands on a target tile, stands on a wrong tile, or drops off the arena during Run

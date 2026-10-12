@@ -81,7 +81,6 @@ default.project.json
 stylua.toml
 selene.toml
 README.md
-CLAUDE.md
 SPEC.md
 src/
   server/    MatchService, ArenaService, RoundDirector,
@@ -150,7 +149,7 @@ Git:
 
 - `main` is always playable and protected.
 - One branch per task, named `slice1/<task-id>-<short-name>`, merged by pull request.
-- The producer reviews every pull request. Claude Code writes the code and cannot review its own work.
+- The producer reviews and merges every pull request. Nobody reviews their own work.
 
 Code:
 
@@ -173,7 +172,7 @@ Goal: a playable core loop with placeholder visuals. Two or more players can pla
 
 Out of scope for slice 1: tile shapes and art, audio, reveal-then-hide, shrinking or moving tiles, shove, spectator pranks, DataStore, shop.
 
-Working rules: see `CLAUDE.md`.
+Working rules: see section 7, Conventions.
 
 Tasks, in order:
 

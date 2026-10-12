@@ -1,6 +1,6 @@
 # Demo QA checklist (D-11)
 
-QA for the 3-day demo build on a **published private copy**, with **4 or more real players**. Do not run 8 local Studio clients (the machine runs out of memory). Fill in the Result column (Pass, Fail or Skip) and add notes or screenshots. Then send the file back and I will fix what fails before the freeze.
+QA for the 3-day demo build on a **published private copy**, with **4 or more real players**. Do not run 8 local Studio clients (the machine runs out of memory). Fill in the Result column (Pass, Fail or Skip) and add notes or screenshots. Then send the file back so failures can be fixed before the freeze.
 
 - **Build:** `main` at the commit you publish, `56e3f9f` or later so it includes D-10 (write it here): `________`
 - **Date:** `________`
